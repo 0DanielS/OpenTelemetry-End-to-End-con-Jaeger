@@ -1,5 +1,6 @@
 import os
 import time
+import uuid
 from contextlib import asynccontextmanager
 
 import httpx
@@ -93,7 +94,7 @@ async def create_order(payload: OrderIn):
 
 
 @app.get("/orders/{order_id}")
-async def get_order(order_id: str):
+async def get_order(order_id: uuid.UUID):
     async with engine.begin() as conn:
         row = (
             await conn.execute(
