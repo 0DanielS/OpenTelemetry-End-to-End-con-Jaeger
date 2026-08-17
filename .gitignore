@@ -1,0 +1,4 @@
+#ignore files playwright
+.playwright-mcp/
+
+reporte-tecnico.html
