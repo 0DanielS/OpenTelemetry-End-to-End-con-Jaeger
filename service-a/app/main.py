@@ -9,7 +9,17 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from .telemetry import db_duration, log, tracer
+from starlette.requests import Request
+
+from .telemetry import (
+    db_duration,
+    http_active_requests,
+    http_request_duration,
+    http_requests,
+    log,
+    service_b_calls,
+    tracer,
+)
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL", "postgresql+asyncpg://orders:orders@postgres:5432/orders"
@@ -39,6 +49,31 @@ async def lifespan(app):
 app = FastAPI(title="orders-api", lifespan=lifespan)
 
 
+@app.middleware("http")
+async def sli_metrics(request: Request, call_next):
+    path = request.url.path
+    if path == "/health":
+        return await call_next(request)
+    route = request.scope.get("route")
+    labels = {"method": request.method, "route": getattr(route, "path", path)}
+    http_active_requests.add(1, labels)
+    start = time.perf_counter()
+    status_code = 500
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        return response
+    finally:
+        route = request.scope.get("route")
+        labels["route"] = getattr(route, "path", path)
+        status_class = f"{status_code // 100}xx"
+        http_requests.add(1, {**labels, "status": status_class})
+        http_request_duration.record(
+            (time.perf_counter() - start) * 1000.0, {**labels, "status": status_class}
+        )
+        http_active_requests.add(-1, labels)
+
+
 class OrderIn(BaseModel):
     product_id: str = Field(..., min_length=1)
     quantity: int = Field(..., ge=1, le=100)
@@ -62,6 +97,7 @@ async def create_order(payload: OrderIn):
         f"{INVENTORY_URL}/products/{payload.product_id}/reserve",
         json={"quantity": payload.quantity},
     )
+    service_b_calls.add(1, {"status": f"{resp.status_code // 100}xx"})
     if resp.status_code != 200:
         log.error("inventory.reserve.failed", status_code=resp.status_code)
         raise HTTPException(status_code=resp.status_code, detail=resp.text)

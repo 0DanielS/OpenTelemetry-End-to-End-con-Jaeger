@@ -7,8 +7,26 @@ datasources:
     access: proxy
     url: http://prometheus:9090
     isDefault: true
+
   - name: Jaeger
     uid: jaeger
     type: jaeger
     access: proxy
     url: http://jaeger:16686
+    jsonData:
+      tracesToMetrics:
+        datasourceUid: prometheus
+        queries:
+          - name: "Latencia p95 del servicio"
+            query: 'histogram_quantile(0.95, sum(rate(http_request_duration_milliseconds_bucket{service_name="$${__span.tags.service_name}"}[5m])) by (le))'
+
+  - name: Tempo
+    uid: tempo
+    type: tempo
+    access: proxy
+    url: http://tempo:3200
+    jsonData:
+      tracesToMetrics:
+        datasourceUid: prometheus
+      serviceMap:
+        datasourceUid: prometheus

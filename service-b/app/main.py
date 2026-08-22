@@ -7,7 +7,17 @@ from pydantic import BaseModel, Field
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
-from .telemetry import db_duration, log, tracer
+from starlette.requests import Request
+
+from .telemetry import (
+    db_duration,
+    http_active_requests,
+    http_request_duration,
+    http_requests,
+    inventory_requests,
+    log,
+    tracer,
+)
 
 DATABASE_URL = os.getenv(
     "DATABASE_URL", "postgresql+asyncpg://inventory:inventory@postgres:5432/inventory"
@@ -34,6 +44,31 @@ async def lifespan(app):
 
 
 app = FastAPI(title="inventory-api", lifespan=lifespan)
+
+
+@app.middleware("http")
+async def sli_metrics(request: Request, call_next):
+    path = request.url.path
+    if path == "/health":
+        return await call_next(request)
+    route = request.scope.get("route")
+    labels = {"method": request.method, "route": getattr(route, "path", path)}
+    http_active_requests.add(1, labels)
+    start = time.perf_counter()
+    status_code = 500
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        return response
+    finally:
+        route = request.scope.get("route")
+        labels["route"] = getattr(route, "path", path)
+        status_class = f"{status_code // 100}xx"
+        http_requests.add(1, {**labels, "status": status_class})
+        http_request_duration.record(
+            (time.perf_counter() - start) * 1000.0, {**labels, "status": status_class}
+        )
+        http_active_requests.add(-1, labels)
 
 
 class ReserveIn(BaseModel):
@@ -83,6 +118,8 @@ async def reserve_stock(product_id: str, payload: ReserveIn):
             (time.perf_counter() - start) * 1000.0, {"operation": "reserve_stock"}
         )
     if row is None:
+        inventory_requests.add(1, {"operation": "reserve", "result": "insufficient"})
         log.warning("insufficient.stock", product_id=product_id, quantity=payload.quantity)
         raise HTTPException(status_code=409, detail="insufficient stock")
+    inventory_requests.add(1, {"operation": "reserve", "result": "ok"})
     return {"product_id": product_id, "remaining_stock": row[0]}

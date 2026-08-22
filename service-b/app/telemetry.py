@@ -31,6 +31,20 @@ configure_logging()
 log = structlog.get_logger()
 tracer = trace.get_tracer("app")
 meter = metrics.get_meter("app")
+
 db_duration = meter.create_histogram(
     "db.operation.duration", unit="ms", description="Duración de operaciones de base de datos"
+)
+
+http_requests = meter.create_counter(
+    "http.requests", unit="1", description="Total de requests HTTP recibidos"
+)
+http_request_duration = meter.create_histogram(
+    "http.request.duration", unit="ms", description="Distribución de latencia HTTP (p50/p95/p99)"
+)
+http_active_requests = meter.create_up_down_counter(
+    "http.active_requests", unit="1", description="Requests activos en vuelo (saturación)"
+)
+inventory_requests = meter.create_counter(
+    "inventory.requests", unit="1", description="Total de consultas de inventario procesadas"
 )
