@@ -26,7 +26,11 @@ DATABASE_URL = os.getenv(
 )
 INVENTORY_URL = os.getenv("INVENTORY_URL", "http://inventory-api:8081")
 
-engine = create_async_engine(DATABASE_URL, pool_size=20, max_overflow=40)
+engine = create_async_engine(
+    DATABASE_URL,
+    pool_size=int(os.getenv("DB_POOL_SIZE", "20")),
+    max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "40")),
+)
 client = httpx.AsyncClient(timeout=10.0)
 
 

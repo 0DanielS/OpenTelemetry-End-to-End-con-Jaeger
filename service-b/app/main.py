@@ -23,7 +23,11 @@ DATABASE_URL = os.getenv(
     "DATABASE_URL", "postgresql+asyncpg://inventory:inventory@postgres:5432/inventory"
 )
 
-engine = create_async_engine(DATABASE_URL, pool_size=20, max_overflow=40)
+engine = create_async_engine(
+    DATABASE_URL,
+    pool_size=int(os.getenv("DB_POOL_SIZE", "20")),
+    max_overflow=int(os.getenv("DB_MAX_OVERFLOW", "40")),
+)
 
 
 @asynccontextmanager
