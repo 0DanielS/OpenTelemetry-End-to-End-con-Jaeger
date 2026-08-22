@@ -78,7 +78,7 @@
           "queryType": "promQL",
           "promQLQuery": {
             "projectName": "opentelemetry-nrb",
-            "expr": "sum(rate(http_server_duration_milliseconds_count{http_status_code=~\"5..\"}[5m])) / sum(rate(http_server_duration_milliseconds_count[5m]))",
+            "expr": "(sum(rate(http_server_duration_milliseconds_count{http_status_code=~\"5..\"}[5m])) or vector(0)) / sum(rate(http_server_duration_milliseconds_count[5m]))",
             "step": "10s"
           },
           "timeSeriesList": {
@@ -132,7 +132,7 @@
           "queryType": "promQL",
           "promQLQuery": {
             "projectName": "opentelemetry-nrb",
-            "expr": "(sum(rate(http_server_duration_milliseconds_count{http_status_code=~\"5..\"}[1h])) / sum(rate(http_server_duration_milliseconds_count[1h]))) / 0.005",
+            "expr": "((sum(rate(http_server_duration_milliseconds_count{http_status_code=~\"5..\"}[1h])) or vector(0)) / sum(rate(http_server_duration_milliseconds_count[1h]))) / 0.005",
             "step": "30s"
           },
           "timeSeriesList": {
@@ -401,5 +401,5 @@
   "timezone": "browser",
   "title": "Observabilidad GCP - Pipeline E2E",
   "uid": "observabilidad-gcp",
-  "version": 3
+  "version": 4
 }
