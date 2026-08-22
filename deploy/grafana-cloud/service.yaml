@@ -1,0 +1,27 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: grafana
+  labels:
+    cloud.googleapis.com/location: us-central1
+spec:
+  template:
+    spec:
+      serviceAccountName: grafana-run@opentelemetry-nrb.iam.gserviceaccount.com
+      containers:
+        - name: grafana
+          image: us-central1-docker.pkg.dev/opentelemetry-nrb/cloud-run-source-deploy/grafana-cloud@sha256:565f82ace6dcf51739274084a8f1d967652e82ae40aad17aead52b2e2ce72a2b
+          ports:
+            - containerPort: 8080
+          env:
+            - name: GF_SERVER_HTTP_PORT
+              value: "8080"
+            - name: GF_AUTH_ANONYMOUS_ENABLED
+              value: "true"
+            - name: GF_AUTH_ANONYMOUS_ORG_ROLE
+              value: "Admin"
+            - name: GF_AUTH_DISABLE_LOGIN_FORM
+              value: "true"
+          resources:
+            limits:
+              memory: 512Mi
