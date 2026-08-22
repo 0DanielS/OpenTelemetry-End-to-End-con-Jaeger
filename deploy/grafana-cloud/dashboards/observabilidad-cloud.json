@@ -1,133 +1,52 @@
 {
-  "annotations": {
-    "list": []
-  },
+  "annotations": { "list": [] },
   "editable": true,
   "graphTooltip": 0,
   "panels": [
     {
       "id": 1,
-      "type": "stat",
-      "title": "SLI-1 Disponibilidad (SLO ≥ 99.5%)",
-      "datasource": {
-        "type": "stackdriver",
-        "uid": "gcm"
-      },
+      "type": "gauge",
+      "title": "SLI-1: Disponibilidad (% requests exitosos, SLO ≥ 99.5%)",
+      "datasource": { "type": "stackdriver", "uid": "gcm" },
       "targets": [
         {
-          "datasource": {
-            "type": "stackdriver",
-            "uid": "gcm"
-          },
+          "datasource": { "type": "stackdriver", "uid": "gcm" },
           "refId": "A",
           "queryType": "promQL",
           "promQLQuery": {
             "projectName": "opentelemetry-nrb",
-            "expr": "sum(rate(http_server_duration_milliseconds_count{http_status_code=~\"2..\"}[5m])) / sum(rate(http_server_duration_milliseconds_count[5m]))",
-            "step": "10s"
+            "expr": "100 * (sum(rate(http_server_duration_milliseconds_count{http_status_code=~\"2..\"}[5m])) / sum(rate(http_server_duration_milliseconds_count[5m])))",
+            "step": "30s"
           },
-          "timeSeriesList": {
-            "projectName": "opentelemetry-nrb",
-            "filters": []
-          }
+          "timeSeriesList": { "projectName": "opentelemetry-nrb", "filters": [] }
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit",
+          "unit": "percent",
           "min": 0,
-          "max": 1,
+          "max": 100,
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "green",
-                "value": 0.995
-              }
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 99 },
+              { "color": "green", "value": 99.5 }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 0,
-        "y": 0
-      }
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 }
     },
     {
       "id": 2,
       "type": "stat",
-      "title": "SLI-3 Error rate (SLO ≤ 0.5%)",
-      "datasource": {
-        "type": "stackdriver",
-        "uid": "gcm"
-      },
+      "title": "Burn Rate 1h — consumo del error budget (PAGE si > 14.4)",
+      "datasource": { "type": "stackdriver", "uid": "gcm" },
       "targets": [
         {
-          "datasource": {
-            "type": "stackdriver",
-            "uid": "gcm"
-          },
-          "refId": "A",
-          "queryType": "promQL",
-          "promQLQuery": {
-            "projectName": "opentelemetry-nrb",
-            "expr": "(sum(rate(http_server_duration_milliseconds_count{http_status_code=~\"5..\"}[5m])) or vector(0)) / sum(rate(http_server_duration_milliseconds_count[5m]))",
-            "step": "10s"
-          },
-          "timeSeriesList": {
-            "projectName": "opentelemetry-nrb",
-            "filters": []
-          }
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percentunit",
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 0.005
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 6,
-        "y": 0
-      }
-    },
-    {
-      "id": 3,
-      "type": "stat",
-      "title": "Burn rate 1h (PAGE si > 14.4)",
-      "datasource": {
-        "type": "stackdriver",
-        "uid": "gcm"
-      },
-      "targets": [
-        {
-          "datasource": {
-            "type": "stackdriver",
-            "uid": "gcm"
-          },
+          "datasource": { "type": "stackdriver", "uid": "gcm" },
           "refId": "A",
           "queryType": "promQL",
           "promQLQuery": {
@@ -135,10 +54,7 @@
             "expr": "((sum(rate(http_server_duration_milliseconds_count{http_status_code=~\"5..\"}[1h])) or vector(0)) / sum(rate(http_server_duration_milliseconds_count[1h]))) / 0.005",
             "step": "30s"
           },
-          "timeSeriesList": {
-            "projectName": "opentelemetry-nrb",
-            "filters": []
-          }
+          "timeSeriesList": { "projectName": "opentelemetry-nrb", "filters": [] }
         }
       ],
       "fieldConfig": {
@@ -148,95 +64,75 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "orange",
-                "value": 1
-              },
-              {
-                "color": "red",
-                "value": 14.4
-              }
+              { "color": "green", "value": null },
+              { "color": "orange", "value": 1 },
+              { "color": "red", "value": 14.4 }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 12,
-        "y": 0
-      }
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 0 }
     },
     {
-      "id": 4,
+      "id": 3,
       "type": "stat",
-      "title": "SLI-4 Saturación (requests en vuelo)",
-      "datasource": {
-        "type": "stackdriver",
-        "uid": "gcm"
-      },
+      "title": "Saturación — requests en vuelo",
+      "datasource": { "type": "stackdriver", "uid": "gcm" },
       "targets": [
         {
-          "datasource": {
-            "type": "stackdriver",
-            "uid": "gcm"
-          },
+          "datasource": { "type": "stackdriver", "uid": "gcm" },
           "refId": "A",
           "queryType": "promQL",
           "promQLQuery": {
             "projectName": "opentelemetry-nrb",
             "expr": "sum by (job) (http_server_active_requests)",
-            "step": "10s"
+            "step": "30s"
           },
-          "timeSeriesList": {
-            "projectName": "opentelemetry-nrb",
-            "filters": []
-          }
+          "timeSeriesList": { "projectName": "opentelemetry-nrb", "filters": [] }
         }
       ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 18,
-        "y": 0
-      }
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 0 }
     },
     {
-      "id": 5,
+      "id": 4,
       "type": "timeseries",
-      "title": "SLI-2 Latencia p95 (SLO < 500ms)",
-      "datasource": {
-        "type": "stackdriver",
-        "uid": "gcm"
-      },
+      "title": "SLI-2: Latencia p50 / p95 / p99 (SLO p95 < 500ms)",
+      "datasource": { "type": "stackdriver", "uid": "gcm" },
       "targets": [
         {
-          "datasource": {
-            "type": "stackdriver",
-            "uid": "gcm"
-          },
+          "datasource": { "type": "stackdriver", "uid": "gcm" },
           "refId": "A",
           "queryType": "promQL",
           "promQLQuery": {
             "projectName": "opentelemetry-nrb",
-            "expr": "histogram_quantile(0.95, sum by (le, job) (rate(http_server_duration_milliseconds_bucket[5m])))",
-            "step": "15s"
+            "expr": "histogram_quantile(0.50, sum by (le, job) (rate(http_server_duration_milliseconds_bucket[5m])))",
+            "step": "30s"
           },
-          "timeSeriesList": {
+          "timeSeriesList": { "projectName": "opentelemetry-nrb", "filters": [] }
+        },
+        {
+          "datasource": { "type": "stackdriver", "uid": "gcm" },
+          "refId": "B",
+          "queryType": "promQL",
+          "promQLQuery": {
             "projectName": "opentelemetry-nrb",
-            "filters": []
-          }
+            "expr": "histogram_quantile(0.95, sum by (le, job) (rate(http_server_duration_milliseconds_bucket[5m])))",
+            "step": "30s"
+          },
+          "timeSeriesList": { "projectName": "opentelemetry-nrb", "filters": [] }
+        },
+        {
+          "datasource": { "type": "stackdriver", "uid": "gcm" },
+          "refId": "C",
+          "queryType": "promQL",
+          "promQLQuery": {
+            "projectName": "opentelemetry-nrb",
+            "expr": "histogram_quantile(0.99, sum by (le, job) (rate(http_server_duration_milliseconds_bucket[5m])))",
+            "step": "30s"
+          },
+          "timeSeriesList": { "projectName": "opentelemetry-nrb", "filters": [] }
         }
       ],
       "fieldConfig": {
@@ -245,161 +141,149 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "red",
-                "value": 500
-              }
+              { "color": "green", "value": null },
+              { "color": "red", "value": 500 }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 6
-      }
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "SLI-3: Error Rate por servicio (% 5xx, SLO ≤ 0.5%)",
+      "datasource": { "type": "stackdriver", "uid": "gcm" },
+      "targets": [
+        {
+          "datasource": { "type": "stackdriver", "uid": "gcm" },
+          "refId": "A",
+          "queryType": "promQL",
+          "promQLQuery": {
+            "projectName": "opentelemetry-nrb",
+            "expr": "100 * (sum by (job) (rate(http_server_duration_milliseconds_count{http_status_code=~\"5..\"}[5m])) or sum by (job) (rate(http_server_duration_milliseconds_count[5m])) * 0) / sum by (job) (rate(http_server_duration_milliseconds_count[5m]))",
+            "step": "30s"
+          },
+          "timeSeriesList": { "projectName": "opentelemetry-nrb", "filters": [] }
+        },
+        {
+          "datasource": { "type": "stackdriver", "uid": "gcm" },
+          "refId": "B",
+          "queryType": "promQL",
+          "promQLQuery": {
+            "projectName": "opentelemetry-nrb",
+            "expr": "vector(0.5)",
+            "step": "30s"
+          },
+          "timeSeriesList": { "projectName": "opentelemetry-nrb", "filters": [] }
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 }
     },
     {
       "id": 6,
       "type": "timeseries",
-      "title": "Throughput (RPS por servicio)",
-      "datasource": {
-        "type": "stackdriver",
-        "uid": "gcm"
-      },
+      "title": "SLI-4: Throughput (RPS por servicio)",
+      "datasource": { "type": "stackdriver", "uid": "gcm" },
       "targets": [
         {
-          "datasource": {
-            "type": "stackdriver",
-            "uid": "gcm"
-          },
+          "datasource": { "type": "stackdriver", "uid": "gcm" },
           "refId": "A",
           "queryType": "promQL",
           "promQLQuery": {
             "projectName": "opentelemetry-nrb",
             "expr": "sum by (job) (rate(http_server_duration_milliseconds_count[5m]))",
-            "step": "15s"
+            "step": "30s"
           },
-          "timeSeriesList": {
-            "projectName": "opentelemetry-nrb",
-            "filters": []
-          }
+          "timeSeriesList": { "projectName": "opentelemetry-nrb", "filters": [] }
         }
       ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 6
-      }
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 }
     },
     {
       "id": 7,
       "type": "timeseries",
       "title": "Latencia DB p99",
-      "datasource": {
-        "type": "stackdriver",
-        "uid": "gcm"
-      },
+      "datasource": { "type": "stackdriver", "uid": "gcm" },
       "targets": [
         {
-          "datasource": {
-            "type": "stackdriver",
-            "uid": "gcm"
-          },
+          "datasource": { "type": "stackdriver", "uid": "gcm" },
           "refId": "A",
           "queryType": "promQL",
           "promQLQuery": {
             "projectName": "opentelemetry-nrb",
             "expr": "histogram_quantile(0.99, sum by (le, job) (rate(db_operation_duration_milliseconds_bucket[5m])))",
-            "step": "15s"
+            "step": "30s"
           },
-          "timeSeriesList": {
-            "projectName": "opentelemetry-nrb",
-            "filters": []
-          }
+          "timeSeriesList": { "projectName": "opentelemetry-nrb", "filters": [] }
         }
       ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ms"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 14
-      }
+      "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 }
     },
     {
       "id": 8,
       "type": "timeseries",
       "title": "Requests por código de status",
-      "datasource": {
-        "type": "stackdriver",
-        "uid": "gcm"
-      },
+      "datasource": { "type": "stackdriver", "uid": "gcm" },
       "targets": [
         {
-          "datasource": {
-            "type": "stackdriver",
-            "uid": "gcm"
-          },
+          "datasource": { "type": "stackdriver", "uid": "gcm" },
           "refId": "A",
           "queryType": "promQL",
           "promQLQuery": {
             "projectName": "opentelemetry-nrb",
             "expr": "sum by (http_status_code) (rate(http_server_duration_milliseconds_count[5m]))",
-            "step": "15s"
+            "step": "30s"
           },
-          "timeSeriesList": {
-            "projectName": "opentelemetry-nrb",
-            "filters": []
-          }
+          "timeSeriesList": { "projectName": "opentelemetry-nrb", "filters": [] }
         }
       ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps"
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Propagación W3C TraceContext — llamadas cross-service (orders → inventory)",
+      "datasource": { "type": "stackdriver", "uid": "gcm" },
+      "targets": [
+        {
+          "datasource": { "type": "stackdriver", "uid": "gcm" },
+          "refId": "A",
+          "queryType": "promQL",
+          "promQLQuery": {
+            "projectName": "opentelemetry-nrb",
+            "expr": "sum by (status) (rate(service_b_calls_total[5m]))",
+            "step": "30s"
+          },
+          "timeSeriesList": { "projectName": "opentelemetry-nrb", "filters": [] }
         },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 14
-      }
+        {
+          "datasource": { "type": "stackdriver", "uid": "gcm" },
+          "refId": "B",
+          "queryType": "promQL",
+          "promQLQuery": {
+            "projectName": "opentelemetry-nrb",
+            "expr": "sum by (operation, result) (rate(inventory_requests_total[5m]))",
+            "step": "30s"
+          },
+          "timeSeriesList": { "projectName": "opentelemetry-nrb", "filters": [] }
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 }
     }
   ],
   "refresh": "10s",
   "schemaVersion": 37,
-  "tags": [
-    "observabilidad",
-    "gcp",
-    "sli",
-    "slo"
-  ],
-  "time": {
-    "from": "now-6h",
-    "to": "now"
-  },
+  "tags": ["observabilidad", "gcp", "sli", "slo"],
+  "time": { "from": "now-6h", "to": "now" },
   "timezone": "browser",
   "title": "Observabilidad GCP - Pipeline E2E",
   "uid": "observabilidad-gcp",
-  "version": 4
+  "version": 5
 }

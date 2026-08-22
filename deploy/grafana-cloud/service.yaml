@@ -10,7 +10,7 @@ spec:
       serviceAccountName: grafana-run@opentelemetry-nrb.iam.gserviceaccount.com
       containers:
         - name: grafana
-          image: us-central1-docker.pkg.dev/opentelemetry-nrb/cloud-run-source-deploy/grafana-cloud@sha256:85e1c984060c3b7c502deb73f0c8176cbfa769b57f4d7cd6a8d149d87a765788
+          image: us-central1-docker.pkg.dev/opentelemetry-nrb/cloud-run-source-deploy/grafana-cloud@sha256:89b213fd6960a410f6071ca1de740aa7c5db6eafef79d8a5f7ae0140a722b1ff
           ports:
             - containerPort: 8080
           env:
