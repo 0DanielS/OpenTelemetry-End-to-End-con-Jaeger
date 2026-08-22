@@ -1,0 +1,53 @@
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:${env:PORT}
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 384
+    spike_limit_mib: 128
+  resourcedetection:
+    detectors: [env, gcp]
+    timeout: 5s
+    override: false
+  resource:
+    attributes:
+      - key: service.namespace
+        value: observabilidad
+        action: upsert
+  batch:
+    timeout: 5s
+    send_batch_size: 1024
+
+exporters:
+  googlecloud:
+    project: opentelemetry-nrb
+    log:
+      default_log_name: otel-lab
+  googlemanagedprometheus:
+    project: opentelemetry-nrb
+  debug:
+    verbosity: normal
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, resource, batch]
+      exporters: [googlecloud, debug]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, resource, batch]
+      exporters: [googlemanagedprometheus, debug]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resourcedetection, resource, batch]
+      exporters: [googlecloud, debug]
