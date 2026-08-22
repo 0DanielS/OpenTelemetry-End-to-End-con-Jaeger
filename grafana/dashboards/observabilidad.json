@@ -2,72 +2,73 @@
   "annotations": { "list": [] },
   "editable": true,
   "graphTooltip": 0,
+  "templating": {
+    "list": [
+      {
+        "name": "service",
+        "label": "Servicio",
+        "type": "query",
+        "datasource": { "type": "prometheus", "uid": "prometheus" },
+        "query": "label_values(http_requests_total, service_name)",
+        "refresh": 2,
+        "includeAll": true,
+        "multi": true,
+        "current": { "text": "All", "value": "$__all" }
+      },
+      {
+        "name": "interval",
+        "label": "Intervalo",
+        "type": "interval",
+        "query": "1m,5m,10m,30m",
+        "current": { "text": "5m", "value": "5m" },
+        "options": [
+          { "text": "1m", "value": "1m", "selected": false },
+          { "text": "5m", "value": "5m", "selected": true },
+          { "text": "10m", "value": "10m", "selected": false },
+          { "text": "30m", "value": "30m", "selected": false }
+        ]
+      }
+    ]
+  },
   "panels": [
     {
       "id": 1,
-      "type": "stat",
-      "title": "SLI-1 Disponibilidad (SLO ≥ 99.5%)",
+      "type": "gauge",
+      "title": "SLI-1: Disponibilidad (% requests exitosos, SLO ≥ 99.5%)",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{status=~\"2..\"}[5m])) / sum(rate(http_requests_total[5m]))",
+          "expr": "100 * (sum(rate(http_requests_total{status=~\"2..\", service_name=~\"$service\"}[$interval])) / sum(rate(http_requests_total{service_name=~\"$service\"}[$interval])))",
           "legendFormat": "disponibilidad",
           "refId": "A"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "percentunit",
+          "unit": "percent",
           "min": 0,
-          "max": 1,
+          "max": 100,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               { "color": "red", "value": null },
-              { "color": "green", "value": 0.995 }
+              { "color": "yellow", "value": 99 },
+              { "color": "green", "value": 99.5 }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 }
+      "gridPos": { "h": 6, "w": 8, "x": 0, "y": 0 }
     },
     {
       "id": 2,
       "type": "stat",
-      "title": "SLI-3 Error rate (SLO ≤ 0.5%)",
+      "title": "Burn Rate 1h — consumo del error budget (PAGE si > 14.4)",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{status=~\"5..\"}[5m])) / sum(rate(http_requests_total[5m]))",
-          "legendFormat": "error rate",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "percentunit",
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              { "color": "green", "value": null },
-              { "color": "red", "value": 0.005 }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "gridPos": { "h": 6, "w": 6, "x": 6, "y": 0 }
-    },
-    {
-      "id": 3,
-      "type": "stat",
-      "title": "Burn rate 1h (PAGE si > 14.4)",
-      "datasource": { "type": "prometheus", "uid": "prometheus" },
-      "targets": [
-        {
-          "expr": "(sum(rate(http_requests_total{status=~\"5..\"}[1h])) / sum(rate(http_requests_total[1h]))) / 0.005",
+          "expr": "((sum(rate(http_requests_total{status=~\"5..\", service_name=~\"$service\"}[1h])) or vector(0)) / sum(rate(http_requests_total{service_name=~\"$service\"}[1h]))) / 0.005",
           "legendFormat": "burn rate",
           "refId": "A"
         }
@@ -87,33 +88,43 @@
         },
         "overrides": []
       },
-      "gridPos": { "h": 6, "w": 6, "x": 12, "y": 0 }
+      "gridPos": { "h": 6, "w": 8, "x": 8, "y": 0 }
     },
     {
-      "id": 4,
+      "id": 3,
       "type": "stat",
-      "title": "SLI-4 Saturación (requests en vuelo)",
+      "title": "Saturación — requests en vuelo",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum by (service_name) (http_active_requests)",
+          "expr": "sum by (service_name) (http_active_requests{service_name=~\"$service\"})",
           "legendFormat": "{{service_name}}",
           "refId": "A"
         }
       ],
       "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-      "gridPos": { "h": 6, "w": 6, "x": 18, "y": 0 }
+      "gridPos": { "h": 6, "w": 8, "x": 16, "y": 0 }
     },
     {
-      "id": 5,
+      "id": 4,
       "type": "timeseries",
-      "title": "SLI-2 Latencia p95 (SLO < 500ms)",
+      "title": "SLI-2: Latencia p50 / p95 / p99 (SLO p95 < 500ms)",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "histogram_quantile(0.95, sum by (le, service_name) (rate(http_request_duration_milliseconds_bucket[5m])))",
-          "legendFormat": "{{service_name}} p95",
+          "expr": "histogram_quantile(0.50, sum by (le, service_name) (rate(http_request_duration_milliseconds_bucket{service_name=~\"$service\"}[$interval])))",
+          "legendFormat": "{{service_name}} p50",
           "refId": "A"
+        },
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, service_name) (rate(http_request_duration_milliseconds_bucket{service_name=~\"$service\"}[$interval])))",
+          "legendFormat": "{{service_name}} p95",
+          "refId": "B"
+        },
+        {
+          "expr": "histogram_quantile(0.99, sum by (le, service_name) (rate(http_request_duration_milliseconds_bucket{service_name=~\"$service\"}[$interval])))",
+          "legendFormat": "{{service_name}} p99",
+          "refId": "C"
         }
       ],
       "fieldConfig": {
@@ -132,19 +143,49 @@
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 }
     },
     {
-      "id": 6,
+      "id": 5,
       "type": "timeseries",
-      "title": "Throughput (RPS por servicio)",
+      "title": "SLI-3: Error Rate por servicio (% 5xx, SLO ≤ 0.5%)",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum by (service_name) (rate(http_requests_total[5m]))",
-          "legendFormat": "{{service_name}} rps",
+          "expr": "100 * (sum by (service_name) (rate(http_requests_total{status=~\"5..\", service_name=~\"$service\"}[$interval])) or sum by (service_name) (rate(http_requests_total{service_name=~\"$service\"}[$interval])) * 0) / sum by (service_name) (rate(http_requests_total{service_name=~\"$service\"}[$interval]))",
+          "legendFormat": "{{service_name}} error rate",
+          "refId": "A"
+        },
+        {
+          "expr": "0.5",
+          "legendFormat": "SLO (0.5%)",
+          "refId": "B"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "unit": "percent", "min": 0 },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "SLO (0.5%)" },
+            "properties": [
+              { "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 }
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "SLI-4: Throughput (RPS por servicio)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (service_name) (rate(http_requests_total{service_name=~\"$service\"}[$interval]))",
+          "legendFormat": "{{service_name}}",
           "refId": "A"
         }
       ],
       "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 }
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 }
     },
     {
       "id": 7,
@@ -153,33 +194,85 @@
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum by (le, service_name) (rate(db_operation_duration_milliseconds_bucket[5m])))",
+          "expr": "histogram_quantile(0.99, sum by (le, service_name) (rate(db_operation_duration_milliseconds_bucket{service_name=~\"$service\"}[$interval])))",
           "legendFormat": "{{service_name}} db p99",
           "refId": "A"
         }
       ],
       "fieldConfig": { "defaults": { "unit": "ms" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 }
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 }
     },
     {
       "id": 8,
       "type": "timeseries",
-      "title": "Propagación / Collector — spans exportados (Jaeger + Tempo)",
+      "title": "CPU Overhead — Collector y host",
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         {
-          "expr": "sum by (exporter) (rate(otelcol_exporter_sent_spans[1m]))",
-          "legendFormat": "{{exporter}} enviados",
+          "expr": "rate(otelcol_process_cpu_seconds[$interval]) * 100",
+          "legendFormat": "OTel Collector CPU %",
           "refId": "A"
         },
         {
-          "expr": "sum by (exporter) (rate(otelcol_exporter_send_failed_spans[1m]))",
-          "legendFormat": "{{exporter}} fallidos",
+          "expr": "100 * sum(rate(system_cpu_time_seconds_total{state!~\"idle|wait\"}[$interval])) / sum(rate(system_cpu_time_seconds_total[$interval]))",
+          "legendFormat": "Host CPU % (ocupado)",
           "refId": "B"
         }
       ],
+      "fieldConfig": { "defaults": { "unit": "percent", "min": 0 }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "OTel Collector — spans enviados / fallidos / en cola / rechazados",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (exporter) (rate(otelcol_exporter_sent_spans[5m]))",
+          "legendFormat": "{{exporter}} enviados/s",
+          "refId": "A"
+        },
+        {
+          "expr": "sum by (exporter) (rate(otelcol_exporter_send_failed_spans[5m]))",
+          "legendFormat": "{{exporter}} fallidos/s",
+          "refId": "B"
+        },
+        {
+          "expr": "sum by (exporter) (otelcol_exporter_queue_size)",
+          "legendFormat": "{{exporter}} en cola",
+          "refId": "C"
+        },
+        {
+          "expr": "sum by (exporter) (otelcol_exporter_queue_capacity)",
+          "legendFormat": "{{exporter}} capacidad cola",
+          "refId": "D"
+        }
+      ],
       "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 }
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 }
+    },
+    {
+      "id": 10,
+      "type": "table",
+      "title": "Propagación W3C TraceContext — llamadas cross-service (orders → inventory)",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        {
+          "expr": "sum by (service_name, status) (rate(service_b_calls_total[$interval]))",
+          "refId": "A",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "expr": "sum by (service_name, operation, result) (rate(inventory_requests_total[$interval]))",
+          "refId": "B",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 30 }
     }
   ],
   "refresh": "5s",
@@ -189,5 +282,5 @@
   "timezone": "browser",
   "title": "Observabilidad - Pipeline E2E",
   "uid": "observabilidad-e2e",
-  "version": 2
+  "version": 3
 }
