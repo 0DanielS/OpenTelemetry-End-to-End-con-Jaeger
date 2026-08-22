@@ -6,7 +6,7 @@ REGION="${REGION:-us-central1}"
 RUNTIME_SA="${RUNTIME_SA:-otel-run@opentelemetry-nrb.iam.gserviceaccount.com}"
 SQL_INSTANCE="${SQL_INSTANCE:-opentelemetry-nrb:us-central1:otel-pg}"
 INVENTORY_URL="${INVENTORY_URL:-https://inventory-api-576253872784.us-central1.run.app}"
-OTEL_ENDPOINT="${OTEL_ENDPOINT:-http://localhost:4317}"
+OTEL_ENDPOINT="${OTEL_ENDPOINT:-https://otel-collector-576253872784.us-central1.run.app:443}"
 
 TARGET="${1:-all}"
 
