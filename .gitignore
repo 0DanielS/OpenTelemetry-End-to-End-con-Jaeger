@@ -2,3 +2,9 @@
 .playwright-mcp/
 
 reporte-tecnico.html
+
+#ignore file md
+actividad-pipeline-observabilidad.md
+comparacion-lab-guia.md
+investigacion-observabilidad.md
+AGENTS.md

@@ -148,8 +148,6 @@ reporte-tecnico.pdf             # reporte técnico final (11 págs, 6 figuras)
 
 - `reporte-tecnico.pdf` — **reporte técnico final** (arquitectura, instrumentación, overhead, despliegue GCP, incidente y fix).
 - `DEPLOY.md` — guía de despliegue en Cloud Run (CI/CD, WIF, secretos).
-- `comparacion-lab-guia.md` — análisis de brechas vs el lab guía y decisiones de alcance.
-- `investigacion-observabilidad.md` / `actividad-pipeline-observabilidad.md` / `plan-implementacion-observabilidad-aws.md` — investigación, especificación y plan original (histórico).
 - `benchmark-resultados.md` — resultados del benchmark de overhead local.
 
 ## Gotchas (lecciones aprendidas; no reinventar)
@@ -164,6 +162,3 @@ reporte-tecnico.pdf             # reporte técnico final (11 págs, 6 figuras)
 - En Cloud Run, **nunca `:latest`**: la imagen se pinea por digest (revisiones cacheadas).
 - El plugin cloud-monitoring de Grafana (≤11.6.x) **pierde las queries PromQL puras** (bug en `migrateRequest`) → cada target lleva un `timeSeriesList` dummy (ver `deploy/grafana-cloud/README.md`).
 
-## Flujo de trabajo del equipo
-
-Nada se pushea directo a `main`: **rama propia → Pull Request → merge**. Los merges que tocan `service-a/**` o `service-b/**` despliegan automáticamente a Cloud Run (verificar que el Action pase).
