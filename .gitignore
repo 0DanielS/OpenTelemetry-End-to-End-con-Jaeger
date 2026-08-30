@@ -1,10 +1,6 @@
-#ignore files playwright
-.playwright-mcp/
+__pycache__/
+*.pyc
+
+.DS_Store
 
 reporte-tecnico.html
-
-#ignore file md
-actividad-pipeline-observabilidad.md
-comparacion-lab-guia.md
-investigacion-observabilidad.md
-AGENTS.md
