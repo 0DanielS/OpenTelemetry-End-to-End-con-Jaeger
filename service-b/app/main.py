@@ -119,7 +119,7 @@ async def reserve_stock(product_id: str, payload: ReserveIn):
             log.warning(
                 "chaos.latency.injected",
                 latency_ms=CHAOS_LATENCY_MS,
-                roduct_id=product_id,
+                product_id=product_id,
             )
 
             await asyncio.sleep(CHAOS_LATENCY_MS / 1000.0)
