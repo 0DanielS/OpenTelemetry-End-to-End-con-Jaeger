@@ -125,6 +125,30 @@ Resultados documentados:
 - **Overhead local** (con vs sin OTel): throughput −38%, p99 +31%, memoria +19–27% → `benchmark-resultados.md`.
 - **Pruebas en la nube** (2 min sostenidos): 15 VUs → 100% éxito, p95 326 ms ✅; 80 VUs → saturación con thresholds cruzados y diagnóstico del agotamiento de conexiones vía el propio pipeline → sección 7.1 del reporte y evidencias en `screenshots_gcp/`.
 
+## Game Day — chaos engineering
+
+`inventory-api` puede inyectar latencia artificial controlada en `POST /products/{id}/reserve`, apagada por defecto y gobernada por dos variables de entorno:
+
+| Variable | Default | Efecto |
+|---|---|---|
+| `CHAOS_ENABLED` | `false` | Habilita la inyección |
+| `CHAOS_LATENCY_MS` | `0` | Milisegundos de latencia añadida |
+
+Con el chaos activo el span `reserve_stock` se marca con `chaos.enabled` / `chaos.latency_ms` y se emite un log `chaos.latency.injected` con `trace_id`, de modo que el experimento es distinguible de una degradación real. Con 2.000 ms (bajo el timeout de 10 s de `orders-api`) el fallo es **gris**: mueve SLI-2 y SLI-4 sin romper disponibilidad ni error rate.
+
+```bash
+# local: editar CHAOS_ENABLED=true / CHAOS_LATENCY_MS=2000 en docker-compose.yml y recrear
+docker compose up -d --build inventory-api
+
+# Cloud Run: activar y hacer rollback
+gcloud run services update inventory-api --region us-central1 \
+  --update-env-vars CHAOS_ENABLED=true,CHAOS_LATENCY_MS=2000
+gcloud run services update inventory-api --region us-central1 \
+  --update-env-vars CHAOS_ENABLED=false,CHAOS_LATENCY_MS=0
+```
+
+Runbook completo (local + GCP, evidencias, criterio de aborto) en **`GAMEDAY.md`**.
+
 ## Estructura del repo
 
 ```
@@ -142,12 +166,14 @@ deploy/otel-collector-cloud/    # collector en Cloud Run → Cloud Trace/Logging
 deploy/grafana-cloud/           # Grafana en Cloud Run leyendo Managed Prometheus
 screenshots/  screenshots_gcp/  # evidencias local y nube
 reporte-tecnico.pdf             # reporte técnico final (11 págs, 6 figuras)
+GAMEDAY.md                      # runbook del experimento de chaos (latencia controlada)
 ```
 
 ## Documentación
 
 - `reporte-tecnico.pdf` — **reporte técnico final** (arquitectura, instrumentación, overhead, despliegue GCP, incidente y fix).
 - `DEPLOY.md` — guía de despliegue en Cloud Run (CI/CD, WIF, secretos).
+- `GAMEDAY.md` — runbook del game day de latencia controlada (local y Cloud Run).
 - `benchmark-resultados.md` — resultados del benchmark de overhead local.
 
 ## Gotchas (lecciones aprendidas; no reinventar)

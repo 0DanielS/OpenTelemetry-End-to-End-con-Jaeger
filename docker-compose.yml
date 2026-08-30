@@ -93,6 +93,8 @@ services:
     build: ./service-b
     environment:
       - DATABASE_URL=postgresql+asyncpg://inventory:inventory@postgres:5432/inventory
+      - CHAOS_ENABLED=false
+      - CHAOS_LATENCY_MS=0
       - OTEL_SERVICE_NAME=inventory-api
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
