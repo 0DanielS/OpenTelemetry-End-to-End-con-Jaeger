@@ -95,6 +95,7 @@ services:
       - DATABASE_URL=postgresql+asyncpg://dataservice:dataservice@postgres:5432/orders
       - CHAOS_ENABLED=false
       - CHAOS_ERROR_RATE=0
+      - CHAOS_ERROR_LATENCY_MS=600
       - OTEL_SERVICE_NAME=data-service
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc

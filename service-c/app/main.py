@@ -1,3 +1,4 @@
+import asyncio
 import os
 import random
 import time
@@ -26,6 +27,7 @@ DATABASE_URL = os.getenv(
 
 CHAOS_ENABLED = os.getenv("CHAOS_ENABLED", "false").lower() == "true"
 CHAOS_ERROR_RATE = int(os.getenv("CHAOS_ERROR_RATE", "0"))
+CHAOS_ERROR_LATENCY_MS = int(os.getenv("CHAOS_ERROR_LATENCY_MS", "600"))
 
 engine = create_async_engine(
     DATABASE_URL,
@@ -73,15 +75,22 @@ async def sli_metrics(request: Request, call_next):
         http_active_requests.add(-1, labels)
 
 
-def maybe_inject_chaos():
+async def maybe_inject_chaos():
     if not (CHAOS_ENABLED and CHAOS_ERROR_RATE > 0):
         return
     span = get_current_span()
     span.set_attribute("chaos.enabled", True)
     span.set_attribute("chaos.error_rate", CHAOS_ERROR_RATE)
     if random.random() * 100 < CHAOS_ERROR_RATE:
+        if CHAOS_ERROR_LATENCY_MS > 0:
+            await asyncio.sleep(CHAOS_ERROR_LATENCY_MS / 1000.0)
         span.set_attribute("chaos.error.injected", True)
-        log.warning("chaos.error.injected", error_rate=CHAOS_ERROR_RATE)
+        span.set_attribute("chaos.error_latency_ms", CHAOS_ERROR_LATENCY_MS)
+        log.warning(
+            "chaos.error.injected",
+            error_rate=CHAOS_ERROR_RATE,
+            error_latency_ms=CHAOS_ERROR_LATENCY_MS,
+        )
         raise HTTPException(status_code=500, detail="chaos error injected")
 
 
@@ -113,7 +122,7 @@ async def health():
 
 @app.get("/stats/orders")
 async def stats_orders():
-    maybe_inject_chaos()
+    await maybe_inject_chaos()
     rows = await run_query(
         "SELECT",
         "orders",
@@ -136,7 +145,7 @@ async def stats_orders():
 
 @app.get("/stats/top-products")
 async def stats_top_products(limit: int = Query(5, ge=1, le=50)):
-    maybe_inject_chaos()
+    await maybe_inject_chaos()
     rows = await run_query(
         "SELECT",
         "orders",
