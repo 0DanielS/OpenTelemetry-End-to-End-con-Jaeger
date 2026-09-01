@@ -38,9 +38,26 @@ deploy_inventory() {
     --quiet
 }
 
+deploy_data() {
+  gcloud run deploy data-service \
+    --source service-c \
+    --project "$PROJECT_ID" \
+    --region "$REGION" \
+    --service-account "$RUNTIME_SA" \
+    --network obs-vpc \
+    --subnet subnet-apis \
+    --vpc-egress private-ranges-only \
+    --set-secrets "DATABASE_URL=data-database-url:latest" \
+    --set-env-vars "OTEL_SERVICE_NAME=data-service,OTEL_EXPORTER_OTLP_PROTOCOL=grpc,OTEL_METRIC_EXPORT_INTERVAL=5000,OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_ENDPOINT,DB_POOL_SIZE=5,DB_MAX_OVERFLOW=5" \
+    --port 8082 \
+    --allow-unauthenticated \
+    --quiet
+}
+
 case "$TARGET" in
   orders) deploy_orders ;;
   inventory) deploy_inventory ;;
-  all) deploy_inventory; deploy_orders ;;
-  *) echo "uso: $0 [orders|inventory|all]" >&2; exit 1 ;;
+  data) deploy_data ;;
+  all) deploy_inventory; deploy_data; deploy_orders ;;
+  *) echo "uso: $0 [orders|inventory|data|all]" >&2; exit 1 ;;
 esac
