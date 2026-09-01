@@ -24,8 +24,23 @@ Estado real del proyecto en la nube al inicio del Laboratorio Integrador. Fuente
 
 - Cloud SQL PostgreSQL 16: instancia `otel-pg`, `db-f1-micro`, zonal, 10 GB.
 - Bases: `orders`, `inventory` (el Lab Integrador agrega `analytics` para `data-service`).
-- Conexión por **socket Unix** (`--add-cloudsql-instances`), sin IP privada de VPC todavía.
+- **IP privada `10.30.0.3`** en `obs-vpc` vía peering PSA (`psa-cloudsql`, 10.30.0.0/20); conserva la IP pública `34.68.109.109` y el socket Unix como respaldo.
+- Los secretos `*-database-url` (versión 2) apuntan a la IP privada: `postgresql+asyncpg://<user>:<pass>@10.30.0.3:5432/<db>`. Migración reproducible con `scripts/migrate-db-secrets-private-ip.sh`.
 - **Guardrail de coste:** `activation-policy=NEVER` fuera de sesión; encender con `ALWAYS` antes de trabajar.
+
+## Red (creada en Fase 0 del Lab Integrador)
+
+- VPC `obs-vpc` (subnets custom), región `us-central1`. IaC: `scripts/gcp-network-bootstrap.sh` (idempotente).
+
+| Subred | Rango | Cargas | Flow Logs |
+|---|---|---|---|
+| `subnet-public` | 10.10.0.0/24 | Grafana (Direct VPC egress) | ✅ sampling 0.5, agregación 5 s |
+| `subnet-apis` | 10.10.1.0/24 | orders-api, inventory-api, otel-collector (Direct VPC egress) | ✅ |
+| `subnet-data` | 10.10.2.0/24 | (reservada capa de datos) | ✅ |
+
+- Cloud SQL vive en el rango PSA `10.30.0.0/20` (peering con `servicenetworking`), no dentro de `subnet-data`; la subred queda reservada para futuras cargas de datos.
+- Firewall: `allow-apis-to-data` (tcp:5432 desde 10.10.1.0/24), `allow-apis-internal` (443/8080/8081/8082/4317/4318 desde 10.10.1.0/24), `deny-public-to-data` (tcp:5432 desde 10.10.0.0/24, prioridad 900).
+- Cloud Run con `--vpc-egress=private-ranges-only`: solo el tráfico a rangos privados (la DB) pasa por la VPC; el resto sale normal.
 
 ## Identidades y seguridad
 
@@ -65,13 +80,10 @@ curl -s -H "Authorization: Bearer $TOKEN" --get \
 
 ## APIs habilitadas
 
-`run`, `cloudbuild`, `artifactregistry`, `secretmanager`, `sqladmin`, `iam`, `iamcredentials`, `sts`, `cloudtrace`, `monitoring`, `logging`.
-
-Pendientes de habilitar para el Lab Integrador: `mesh.googleapis.com` (Cloud Service Mesh), `compute.googleapis.com` (VPC/subnets/flow logs), `securitycenter.googleapis.com`, `containeranalysis.googleapis.com`, `containerscanning.googleapis.com`.
+`run`, `cloudbuild`, `artifactregistry`, `secretmanager`, `sqladmin`, `iam`, `iamcredentials`, `sts`, `cloudtrace`, `monitoring`, `logging`, y desde la Fase 0 del Lab Integrador: `compute`, `servicenetworking`, `networkservices`, `trafficdirector`, `mesh`, `securitycenter`, `containeranalysis`, `containerscanning`.
 
 ## Lo que NO existe todavía
 
-- VPC propia (los servicios no pasan por VPC; Cloud SQL va por socket, no por IP privada).
 - Alert policies / SLOs en Cloud Monitoring.
 - Anomaly Detection.
 - Service mesh.

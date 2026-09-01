@@ -189,12 +189,12 @@ Dependencias: la Fase 5 (chaos/MTTD) necesita las alertas de la Fase 3 y el `dat
 ### Fase 0 — Preparación y red base (1 día)
 
 - [x] Confirmar que el repo es público (o hacerlo público) y crear rama `feature/lab-integrador`.
-- [ ] Habilitar APIs nuevas: `compute.googleapis.com`, `mesh.googleapis.com`, `securitycenter.googleapis.com`, `containeranalysis.googleapis.com`, `containerscanning.googleapis.com`.
-- [ ] Crear la VPC con las tres subredes del diseño ([D3](docs/context/04-decisiones-red-y-mesh.md)): `subnet-public` (Grafana), `subnet-apis` (privada, APIs + collector), `subnet-data` (privada, Cloud SQL) — con Flow Logs habilitados desde la creación.
-- [ ] Reglas de firewall: apis→data permitido, público→data denegado; Grafana como único servicio con ingress `all`.
-- [ ] Conectar los servicios de Cloud Run existentes a la VPC con **Direct VPC egress** (`--network`/`--subnet=subnet-apis`).
-- [ ] Migrar la conexión a Cloud SQL de socket Unix a **IP privada** en `subnet-data`.
-- [ ] Verificar presupuesto/billing del proyecto `opentelemetry-nrb` para los servicios nuevos.
+- [x] Habilitar APIs nuevas: `compute`, `servicenetworking`, `networkservices`, `trafficdirector`, `mesh`, `securitycenter`, `containeranalysis`, `containerscanning`.
+- [x] Crear la VPC `obs-vpc` con las tres subredes del diseño ([D3](docs/context/04-decisiones-red-y-mesh.md)): `subnet-public`, `subnet-apis`, `subnet-data` — con Flow Logs habilitados desde la creación (`scripts/gcp-network-bootstrap.sh`).
+- [x] Reglas de firewall: apis→data (5432) permitido, público→data denegado (prioridad 900), tráfico interno de apis permitido. La restricción de ingress de las APIs queda para la Fase 2 (mesh + auth).
+- [x] Conectar los 4 servicios de Cloud Run a la VPC con **Direct VPC egress** (`subnet-apis` para las APIs y el collector, `subnet-public` para Grafana; `--vpc-egress=private-ranges-only`).
+- [x] Migrar la conexión a Cloud SQL a **IP privada** (`10.30.0.3` vía peering PSA; secretos v2 con `scripts/migrate-db-secrets-private-ip.sh`; flujo e2e verificado con 201).
+- [x] Verificar presupuesto/billing del proyecto `opentelemetry-nrb` (cuenta activa y habilitada).
 
 ### Fase 1 — Módulo A: `data-service` (2–3 días)
 

@@ -53,7 +53,8 @@ Se crea una VPC propia para dar soporte a Direct VPC egress, al mesh y a los VPC
 
 Notas de implementación:
 
-- **VPC Flow Logs habilitados en las tres subredes** (sampling alto durante los experimentos): base del Módulo C para la alerta de tráfico anómalo y el análisis N-S vs E-W.
+- **Matiz de Cloud SQL:** al ser servicio gestionado, su IP privada no vive dentro de `subnet-data` sino en el rango de **Private Services Access** (`psa-cloudsql`, 10.30.0.0/20) peereado a la VPC. `subnet-data` queda reservada para futuras cargas de datos propias; la regla conceptual "apis→data" se implementa igual (firewall 5432 + el peering solo alcanzable desde la VPC).
+- **VPC Flow Logs habilitados en las tres subredes** (sampling 0.5, agregación 5 s): base del Módulo C para la alerta de tráfico anómalo y el análisis N-S vs E-W.
 - En Cloud Run "pública/privada" se materializa con ingress: Grafana con ingress `all`; las APIs con ingress `internal` + Direct VPC egress, y firewall entre subredes (apis→data permitido, público→data denegado).
 - Migrar la conexión a Cloud SQL de socket Unix a **IP privada** dentro de `subnet-data` para que el tráfico de datos también sea observable en los flow logs.
 - Esta VPC es también prerrequisito del mesh (D2): `--network`/`--subnet` apuntan a `subnet-apis`.
