@@ -58,9 +58,8 @@ async def sli_metrics(request: Request, call_next):
     path = request.url.path
     if path == "/health":
         return await call_next(request)
-    route = request.scope.get("route")
-    labels = {"method": request.method, "route": getattr(route, "path", path)}
-    http_active_requests.add(1, labels)
+    active_labels = {"method": request.method}
+    http_active_requests.add(1, active_labels)
     start = time.perf_counter()
     status_code = 500
     try:
@@ -69,13 +68,14 @@ async def sli_metrics(request: Request, call_next):
         return response
     finally:
         route = request.scope.get("route")
-        labels["route"] = getattr(route, "path", path)
-        status_class = f"{status_code // 100}xx"
-        http_requests.add(1, {**labels, "status": status_class})
-        http_request_duration.record(
-            (time.perf_counter() - start) * 1000.0, {**labels, "status": status_class}
-        )
-        http_active_requests.add(-1, labels)
+        labels = {
+            "method": request.method,
+            "route": getattr(route, "path", path),
+            "status": f"{status_code // 100}xx",
+        }
+        http_requests.add(1, labels)
+        http_request_duration.record((time.perf_counter() - start) * 1000.0, labels)
+        http_active_requests.add(-1, active_labels)
 
 
 class OrderIn(BaseModel):

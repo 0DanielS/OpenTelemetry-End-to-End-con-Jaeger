@@ -18,7 +18,7 @@ deploy_orders() {
     --service-account "$RUNTIME_SA" \
     --add-cloudsql-instances "$SQL_INSTANCE" \
     --set-secrets "DATABASE_URL=orders-database-url:latest" \
-    --set-env-vars "INVENTORY_URL=$INVENTORY_URL,OTEL_SERVICE_NAME=orders-api,OTEL_EXPORTER_OTLP_PROTOCOL=grpc,OTEL_METRIC_EXPORT_INTERVAL=5000,OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_ENDPOINT,DB_POOL_SIZE=5,DB_MAX_OVERFLOW=5" \
+    --set-env-vars "INVENTORY_URL=$INVENTORY_URL,OTEL_SERVICE_NAME=orders-api,OTEL_EXPORTER_OTLP_PROTOCOL=grpc,OTEL_METRIC_EXPORT_INTERVAL=15000,OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_ENDPOINT,DB_POOL_SIZE=5,DB_MAX_OVERFLOW=5" \
     --port 8080 \
     --allow-unauthenticated \
     --quiet
@@ -32,7 +32,7 @@ deploy_inventory() {
     --service-account "$RUNTIME_SA" \
     --add-cloudsql-instances "$SQL_INSTANCE" \
     --set-secrets "DATABASE_URL=inventory-database-url:latest" \
-    --set-env-vars "OTEL_SERVICE_NAME=inventory-api,OTEL_EXPORTER_OTLP_PROTOCOL=grpc,OTEL_METRIC_EXPORT_INTERVAL=5000,OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_ENDPOINT,DB_POOL_SIZE=5,DB_MAX_OVERFLOW=5" \
+    --set-env-vars "OTEL_SERVICE_NAME=inventory-api,OTEL_EXPORTER_OTLP_PROTOCOL=grpc,OTEL_METRIC_EXPORT_INTERVAL=15000,OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_ENDPOINT,DB_POOL_SIZE=5,DB_MAX_OVERFLOW=5" \
     --port 8081 \
     --allow-unauthenticated \
     --quiet
@@ -49,7 +49,7 @@ deploy_data() {
     --vpc-egress private-ranges-only \
     --no-cpu-throttling \
     --set-secrets "DATABASE_URL=data-database-url:latest" \
-    --set-env-vars "OTEL_SERVICE_NAME=data-service,OTEL_BSP_SCHEDULE_DELAY=1000,OTEL_EXPORTER_OTLP_PROTOCOL=grpc,OTEL_METRIC_EXPORT_INTERVAL=5000,OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_ENDPOINT,DB_POOL_SIZE=5,DB_MAX_OVERFLOW=5" \
+    --set-env-vars "OTEL_SERVICE_NAME=data-service,OTEL_BSP_SCHEDULE_DELAY=1000,OTEL_EXPORTER_OTLP_PROTOCOL=grpc,OTEL_METRIC_EXPORT_INTERVAL=15000,OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_ENDPOINT,DB_POOL_SIZE=5,DB_MAX_OVERFLOW=5" \
     --port 8082 \
     --allow-unauthenticated \
     --quiet

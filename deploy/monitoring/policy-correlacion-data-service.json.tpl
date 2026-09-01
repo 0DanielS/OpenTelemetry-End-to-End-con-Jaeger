@@ -10,7 +10,7 @@
     {
       "displayName": "error_rate > baseline+2sigma Y p99 > SLO",
       "conditionPrometheusQueryLanguage": {
-        "query": "(((sum(rate(http_requests_total{job=\"observabilidad/data-service\",status=\"5xx\"}[5m])) or on() vector(0)) / sum(rate(http_requests_total{job=\"observabilidad/data-service\"}[5m]))) > (avg_over_time(((sum(rate(http_requests_total{job=\"observabilidad/data-service\",status=\"5xx\"}[5m])) or on() vector(0)) / sum(rate(http_requests_total{job=\"observabilidad/data-service\"}[5m])))[1h:5m]) + 2 * stddev_over_time(((sum(rate(http_requests_total{job=\"observabilidad/data-service\",status=\"5xx\"}[5m])) or on() vector(0)) / sum(rate(http_requests_total{job=\"observabilidad/data-service\"}[5m])))[1h:5m]) + 0.005)) and (histogram_quantile(0.99, sum by (le) (rate(http_request_duration_milliseconds_bucket{job=\"observabilidad/data-service\"}[5m]))) > 500)",
+        "query": "(((sum(rate(http_requests_total{job=\"observabilidad/data-service\",status=\"5xx\"}[5m])) or on() vector(0)) / (sum(rate(http_requests_total{job=\"observabilidad/data-service\"}[5m])) > 0)) > (avg_over_time(((sum(rate(http_requests_total{job=\"observabilidad/data-service\",status=\"5xx\"}[5m])) or on() vector(0)) / (sum(rate(http_requests_total{job=\"observabilidad/data-service\"}[5m])) > 0))[1h:5m]) + 2 * stddev_over_time(((sum(rate(http_requests_total{job=\"observabilidad/data-service\",status=\"5xx\"}[5m])) or on() vector(0)) / (sum(rate(http_requests_total{job=\"observabilidad/data-service\"}[5m])) > 0))[1h:5m]) + 0.005)) and (histogram_quantile(0.99, sum by (le) (rate(http_request_duration_milliseconds_bucket{job=\"observabilidad/data-service\"}[5m]))) > 500)",
         "duration": "0s",
         "evaluationInterval": "30s"
       }

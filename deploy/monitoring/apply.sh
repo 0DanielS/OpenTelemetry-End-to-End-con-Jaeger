@@ -7,7 +7,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 SERVICES=(orders-api inventory-api data-service)
 
 CHANNEL="$(gcloud alpha monitoring channels list --project="$PROJECT_ID" \
-  --filter="type=email AND labels.email_address=${NOTIFY_EMAIL}" \
+  --filter="type=\"email\" AND labels.email_address=\"${NOTIFY_EMAIL}\"" \
   --format="value(name)" | head -1)"
 if [[ -z "$CHANNEL" ]]; then
   CHANNEL="$(gcloud alpha monitoring channels create --project="$PROJECT_ID" \

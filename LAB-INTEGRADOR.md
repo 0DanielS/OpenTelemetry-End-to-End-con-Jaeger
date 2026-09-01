@@ -221,13 +221,15 @@ Dependencias: la Fase 5 (chaos/MTTD) necesita las alertas de la Fase 3 y el `dat
 
 ### Fase 3 — Módulo B: AIOps (2 días)
 
-- [ ] Crear SLOs formales en Cloud Monitoring (disponibilidad y latencia p99) para los 3 servicios, con error budget.
-- [ ] Alertas con umbral estático (grupo de control para la comparación de ruido).
-- [ ] Habilitar **Anomaly Detection** de Cloud Monitoring sobre las métricas de `data-service`.
-- [ ] Regla de correlación: `error_rate > baseline + 2σ` **Y** `latency_p99 > SLO` → alerta (MQL/PromQL combinado o alerta multi-condición).
-- [ ] Enriquecer la alerta con `trace_id`: log-based alert sobre los logs de error (que ya llevan `trace_id`) o documentación de la notificación con link a Cloud Trace.
-- [ ] Ejecutar la misma ventana de carga con ambos sistemas y registrar la evidencia cuantitativa: nº de alertas estáticas vs. correlacionadas.
-- [ ] Dejar todas las políticas como código (gcloud/Terraform) en `deploy/monitoring/`.
+- [x] SLOs formales en Cloud Monitoring con error budget: `disponibilidad-99-5` y `latencia-500ms-95` (rolling 7d) por cada uno de los 3 servicios.
+- [x] 6 alertas con umbral estático (grupo de control para la comparación de ruido).
+- [x] Detección de anomalías como **umbral dinámico estadístico** (baseline + 2σ aprendidos de la última hora vía subqueries PromQL, evaluación cada 30 s) — decisión documentada en `deploy/monitoring/README.md`.
+- [x] Regla de correlación `error_rate > baseline+2σ` **Y** `p99 > SLO` en una sola política PromQL — **validada con fuego real**: chaos 30% durante 6 min, la condición devolvió valor durante toda la ventana y quedó vacía fuera (se corrigió un NaN en el baseline con denominador filtrado a >0).
+- [x] Alerta enriquecida con `trace_id`: log-based alert sobre `chaos.error.injected` (el incidente incluye el log con `trace_id`/`span_id`) + documentación de la política de correlación con la ruta al trace.
+- [ ] Evidencia cuantitativa de reducción de ruido (nº alertas estáticas vs. correlacionadas en la misma ventana) — se captura formalmente durante los experimentos de la Fase 5.
+- [x] Todo como código en `deploy/monitoring/` (`apply.sh` idempotente + plantillas JSON).
+- [x] Extra: pipeline de métricas sin pérdidas — fix de identidad por proceso (`service.instance.id`), export a 15 s + batch 2 s, y corrección del bug de labels mutados en el middleware SLI que generaba series de alta cardinalidad y puntos duplicados en GMP.
+- [ ] Tuning pendiente para MTTD < 2 min (Fase 5): acortar las ventanas `rate[5m]` de la condición a `[2m]`–`[3m]` (con 5m la correlación tardó ~2.5–3 min en volverse verdadera).
 
 ### Fase 4 — Módulo C: Network & Security (2 días; la VPC y los Flow Logs vienen de Fase 0)
 
