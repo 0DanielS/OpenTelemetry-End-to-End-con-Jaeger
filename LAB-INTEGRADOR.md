@@ -200,15 +200,15 @@ Dependencias: la Fase 5 (chaos/MTTD) necesita las alertas de la Fase 3 y el `dat
 
 ### Fase 1 — Módulo A: `data-service` (2–3 días)
 
-- [ ] Crear `service-c/` (FastAPI + asyncpg, mismo patrón que service-a/b): endpoints de consulta analítica sobre Cloud SQL (p. ej. `GET /stats/orders`, `GET /stats/top-products`).
-- [ ] Instrumentar las 3 señales reutilizando el patrón `telemetry.py` existente.
-- [ ] Database spans con **OTel DB Semantic Conventions**: `db.system.name`, `db.namespace`, `db.operation.name`, `db.query.text`, `server.address`.
-- [ ] Integrarlo al flujo: `orders-api` lo invoca (o k6 lo golpea directo) para que aparezca en las trazas end-to-end.
-- [ ] Agregar mecanismo de caos: `CHAOS_ERROR_RATE` (0–100) que devuelve 500 en ese porcentaje de requests, logueando `trace_id` (necesario para Fase 5).
-- [ ] Local: sumarlo a `docker-compose.yml`, base `analytics` en `init-db.sql`, panel en Grafana local.
-- [ ] Cloud: base/usuario/secret en Cloud SQL (extender `gcp-bootstrap.sh`), workflow `.github/workflows/deploy-data.yml`, deploy a Cloud Run conectado al Collector.
-- [ ] Actualizar `k6/script.js` para incluir tráfico al data-service.
-- [ ] Verificar en Cloud Trace una traza con spans de DB correctamente atributados.
+- [x] Crear `service-c/` (FastAPI + asyncpg): `GET /stats/orders` y `GET /stats/top-products` sobre la base `orders` con usuario de solo lectura `dataservice`.
+- [x] Instrumentar las 3 señales reutilizando el patrón `telemetry.py` (verificadas en local: Jaeger, Prometheus y logs con `trace_id`).
+- [x] Database spans con **OTel DB Semantic Conventions**: `db.system.name`, `db.namespace`, `db.operation.name`, `db.collection.name`, `db.query.text`, `server.address`, `server.port`.
+- [x] Integración al flujo vía k6 (escenario `stats`); data-service queda fuera del hot path de `POST /orders` a propósito, para acotar el blast radius del experimento de caos 2.
+- [x] Mecanismo de caos `CHAOS_ENABLED` + `CHAOS_ERROR_RATE` (0–100): validado en local al 50% (10/20 fallos) con evento `chaos.error.injected` + `trace_id`, rollback a 20/20 OK.
+- [x] Local: en `docker-compose.yml` (puerto 8082), usuario `dataservice` en `init-db.sql`; el dashboard lo recoge solo vía la variable `$service`.
+- [x] Cloud: usuario/secret/grants con `scripts/setup-dataservice-db.sh` (encadenado a `gcp-bootstrap.sh`), workflow `deploy-data.yml`, desplegado en Cloud Run con VPC (`data-service-576253872784.us-central1.run.app`).
+- [x] `k6/script.js` con tráfico al data-service (escenario `stats`, 3 VUs constantes).
+- [x] Verificado en Cloud Trace: traza de data-service con spans de DB correctamente atributados.
 
 ### Fase 2 — Módulo A: Service mesh sobre Cloud Run (1–2 días; requiere la VPC de Fase 0)
 

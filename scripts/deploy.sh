@@ -47,8 +47,9 @@ deploy_data() {
     --network obs-vpc \
     --subnet subnet-apis \
     --vpc-egress private-ranges-only \
+    --no-cpu-throttling \
     --set-secrets "DATABASE_URL=data-database-url:latest" \
-    --set-env-vars "OTEL_SERVICE_NAME=data-service,OTEL_EXPORTER_OTLP_PROTOCOL=grpc,OTEL_METRIC_EXPORT_INTERVAL=5000,OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_ENDPOINT,DB_POOL_SIZE=5,DB_MAX_OVERFLOW=5" \
+    --set-env-vars "OTEL_SERVICE_NAME=data-service,OTEL_BSP_SCHEDULE_DELAY=1000,OTEL_EXPORTER_OTLP_PROTOCOL=grpc,OTEL_METRIC_EXPORT_INTERVAL=5000,OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_ENDPOINT,DB_POOL_SIZE=5,DB_MAX_OVERFLOW=5" \
     --port 8082 \
     --allow-unauthenticated \
     --quiet

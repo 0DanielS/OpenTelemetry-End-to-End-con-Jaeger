@@ -17,6 +17,7 @@ Estado real del proyecto en la nube al inicio del Laboratorio Integrador. Fuente
 |---|---|---|
 | `orders-api` | `service-a/` | Puerto 8080; env `INVENTORY_URL`; secret `orders-database-url` → `DATABASE_URL` |
 | `inventory-api` | `service-b/` | Puerto 8081; secret `inventory-database-url`; mecanismo de chaos por env vars |
+| `data-service` | `service-c/` | Puerto 8082; stats analíticas de solo lectura sobre la base `orders` (usuario `dataservice`, secret `data-database-url`); chaos por `CHAOS_ERROR_RATE`; en VPC `subnet-apis` |
 | `otel-collector` | `deploy/otel-collector-cloud/` | OTLP gRPC sobre TLS/HTTP2 (`--use-http2`); hoy `--allow-unauthenticated` (endpoint OTLP público — pendiente cerrar) |
 | `grafana` | `deploy/grafana-cloud/` | Dashboard 9 paneles sobre Managed Prometheus; URL `grafana-576253872784.us-central1.run.app` |
 
@@ -91,6 +92,12 @@ curl -s -H "Authorization: Bearer $TOKEN" --get \
 - `data-service` y su base `analytics`.
 
 ## Notas operativas
+
+### Hallazgo Fase 1: CPU throttling de Cloud Run mata el export de trazas
+
+Con la asignación de CPU por defecto (solo durante requests), el hilo en background del `BatchSpanProcessor` del SDK se congela entre requests: los spans quedan encolados y llegan al collector hasta **25 minutos tarde**, o se pierden si la instancia escala a cero antes. Las **métricas sobreviven** porque son acumulativas (cualquier export exitoso lleva los totales) — por eso el síntoma es traicionero: métricas y logs fluyen, trazas desaparecen sin ningún error visible. Servicios con requests largos (orders-api: ~300 ms con llamada HTTP + DB) casi no lo sufren; servicios con requests de ~10 ms (data-service) lo sufren siempre.
+
+**Fix aplicado a data-service** (persistido en `deploy.sh` y `deploy-data.yml`): `--no-cpu-throttling` (CPU siempre asignada mientras la instancia vive) + `OTEL_BSP_SCHEDULE_DELAY=1000` (flush del batch cada 1 s). Resultado: traza en Cloud Trace en ~25 s. Considerar el mismo fix en orders/inventory antes de la Fase 5 si el MTTD lo requiere.
 
 - Consola GCP con `&authuser=1` (la cuenta del proyecto no es la primera sesión del navegador).
 - Collector escalando desde cero puede perder los primeros exports (`DEADLINE_EXCEEDED`): considerar `min-instances=1` durante experimentos con MTTD.
