@@ -184,6 +184,8 @@ Dos decisiones técnicas ya tomadas (detalle en [`docs/context/04-decisiones-red
 
 ## Plan de trabajo por fases
 
+> Explicación pedagógica de qué construye cada fase y por qué: [`docs/fases/`](docs/fases/README.md).
+
 Dependencias: la Fase 5 (chaos/MTTD) necesita las alertas de la Fase 3 y el `data-service` de la Fase 1. Las Fases 2, 3 y 4 son independientes entre sí y pueden avanzar en paralelo.
 
 ### Fase 0 — Preparación y red base (1 día)
