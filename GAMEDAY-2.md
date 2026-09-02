@@ -33,21 +33,21 @@ stddev_over_time((p99_5m)[1h:5m]) → 110.77 ms   ← σ inflada por picos de 70
 
 Rollback limpio; se reejecutó con baseline de 25 min de operación limpia.
 
-### Intento 2 — resultado
-
-<!-- PENDIENTE-EXP1: completar con la salida del runner -->
+### Intento 2 — resultado (2026-09-02, baseline limpio de 25 min)
 
 | Métrica | Valor |
 |---|---|
-| T0 (inyección) | _pendiente_ |
-| T1 (condición del detector verdadera) | _pendiente_ |
-| **MTTD** | _pendiente_ |
-| p99 baseline → bajo caos | ~25 ms → _pendiente_ |
-| Umbral estático (500 ms) | _pendiente (esperado: silencio — falso negativo del control)_ |
-| ¿SLO degradado? | _pendiente (esperado: no — 200 ms queda dentro del SLO de 500 ms)_ |
-| ¿Error budget consumido? | _pendiente (esperado: no — por lo mismo)_ |
-| ¿Alerta accionable? | _pendiente_ |
-| Recuperación post-rollback | _pendiente_ |
+| T0 (revisión con caos sirviendo) | 02:14:09Z |
+| T1 (condición del detector verdadera) | 02:14:28Z |
+| **MTTD** | **19 segundos** (objetivo: < 120 s) |
+| p99 baseline → bajo caos | 9.95 ms → 234–248.5 ms |
+| Umbral estático (500 ms) | **Silencio durante toda la inyección** — falso negativo del grupo de control, como se predijo |
+| ¿SLO degradado? | **No** — 248 ms queda dentro del SLO de 500 ms; la degradación gris es real pero no viola la promesa |
+| ¿Error budget consumido? | **No** — budget del SLO de latencia: 98.20% antes → 98.24% después (sin consumo) |
+| ¿Alerta accionable? | Sí — anomalía con contexto de baseline; el on-call sabe que el "normal" era ~10 ms |
+| Recuperación post-rollback | p99 de vuelta a 22 ms en < 3 min; condición vacía |
+
+**Observación del detector adaptativo:** a partir de T0+4 min la condición volvió a vacío con el caos aún activo — la ventana de baseline `[20m:1m]` fue absorbiendo los 248 ms como "nuevo normal". Es el comportamiento esperado de una ventana adaptativa corta: detecta el *cambio*, no el *estado*. El incidente ya estaba abierto (autoClose 30 min), así que la detección no se pierde; en producción, la ventana larga del roadmap (7 días) hace la adaptación mucho más lenta que cualquier incidente.
 
 ## Experimento 2 — Errores parciales: error rate 10% en data-service
 
