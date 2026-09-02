@@ -21,7 +21,7 @@ deploy_orders() {
     --region "$REGION" \
     --service-account "$RUNTIME_SA" \
     --add-cloudsql-instances "$SQL_INSTANCE" \
-    --set-secrets "DATABASE_URL=orders-database-url:1" \
+    --set-secrets "DATABASE_URL=orders-database-url:4" \
     --set-env-vars "INVENTORY_URL=$INVENTORY_URL,OTEL_SERVICE_NAME=orders-api,OTEL_EXPORTER_OTLP_PROTOCOL=grpc,OTEL_METRIC_EXPORT_INTERVAL=15000,OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_ENDPOINT,DB_POOL_SIZE=5,DB_MAX_OVERFLOW=5" \
     --port 8080 \
     --allow-unauthenticated \

@@ -219,7 +219,7 @@ Dependencias: la Fase 5 (chaos/MTTD) necesita las alertas de la Fase 3 y el `dat
 - [x] `run.invoker` otorgado a las SAs en los destinos (base de auth servicio-a-servicio).
 - [ ] Cerrar el collector (ingress interno): **bloqueado por conflicto reproducible** — el sidecar Envoy del cliente mesh no arranca con `--vpc-egress=all-traffic` (probe 15020 falla), y sin all-traffic los exports de orders no alcanzan un ingress interno. Se revirtió a público; caminos futuros: OTLP autenticado en el exporter o rutear el OTLP por el propio mesh. `inventory`/`data` quedaron en all-traffic.
 - [x] Hallazgo de incompatibilidad documentado: el sidecar captura todo RFC-1918, así que el cliente del mesh no puede usar la base por IP privada (10.30.0.3) — `orders-api` volvió al socket de Cloud SQL (secreto pinneado a v1); `inventory`/`data` siguen por IP privada.
-- [ ] Documentar topología final en el README (pendiente para el cierre).
+- [x] Topología final documentada en el README.
 
 ### Fase 3 — Módulo B: AIOps (2 días)
 

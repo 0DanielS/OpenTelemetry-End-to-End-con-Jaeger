@@ -1,6 +1,8 @@
 # Pipeline de Observabilidad End-to-End con OpenTelemetry
 
-Repositorio del módulo de **Observabilidad** (Maestría). Implementa un pipeline de observabilidad end-to-end sobre **2 microservicios Python/FastAPI**, capturando las **3 señales** (trazas, métricas y logs) con OpenTelemetry y correlacionándolas por `trace_id` (W3C Trace Context).
+Repositorio del módulo de **Observabilidad** (Maestría). Implementa un sistema observable completo sobre **3 microservicios Python/FastAPI**, capturando las **3 señales** (trazas, métricas y logs) con OpenTelemetry y correlacionándolas por `trace_id` (W3C Trace Context) — extendido en el **Laboratorio Integrador** con VPC + Flow Logs, **service mesh sobre Cloud Run (sin GKE)**, SLOs con error budget, detección de anomalías con correlación (AIOps), golden signals de seguridad y chaos engineering con **MTTD medido (19 s y 41 s)**.
+
+> **Laboratorio Integrador:** consigna y plan en [`LAB-INTEGRADOR.md`](LAB-INTEGRADOR.md) · guía por fases en [`docs/fases/`](docs/fases/README.md) · madurez en [`docs/madurez-observabilidad.md`](docs/madurez-observabilidad.md) · experimentos en [`GAMEDAY-2.md`](GAMEDAY-2.md) · reporte ejecutivo en `reporte-final.pdf`.
 
 Corre en **dos entornos equivalentes**:
 
@@ -12,7 +14,8 @@ Corre en **dos entornos equivalentes**:
 ## Arquitectura
 
 ```
-k6 ──▶ orders-api ──(HTTP, W3C traceparent)──▶ inventory-api ──▶ Postgres (orders / inventory)
+k6 ──▶ orders-api ──(mesh: inventory-api.mesh.internal)──▶ inventory-api ──▶ Postgres (IP privada)
+  └──▶ data-service (stats analíticas, DB spans semconv) ──▶ Postgres
           │  │  │                                      │  │  │
           └──┴──┴────── OTLP (gRPC:4317 / HTTP:4318) ──┴──┘  │
                                 ▼                            │
@@ -28,7 +31,8 @@ En la nube el mismo diagrama se traduce a: Cloud Run (servicios + collector + Gr
 | Componente | Rol | Puerto local |
 |---|---|---|
 | `orders-api` (service-a) | Crea pedidos, llama a inventory por HTTP, persiste la orden | 8080 |
-| `inventory-api` (service-b) | Valida y reserva stock (UPDATE atómico) | 8081 |
+| `inventory-api` (service-b) | Valida y reserva stock (UPDATE atómico); destino del mesh | 8081 |
+| `data-service` (service-c) | Consultas analíticas de solo lectura con DB spans semconv; chaos por error rate | 8082 |
 | OTel Collector | Recibe OTLP y enruta las 3 señales | 4317/4318/8889 |
 | Jaeger all-in-one | Trazas | 16686 |
 | Tempo | Trazas (Grafana stack) + service-graphs / span-metrics | 3200 |
