@@ -235,11 +235,12 @@ Dependencias: la Fase 5 (chaos/MTTD) necesita las alertas de la Fase 3 y el `dat
 
 ### Fase 4 — Módulo C: Network & Security (2 días; la VPC y los Flow Logs vienen de Fase 0)
 
-- [ ] Validar que los **VPC Flow Logs** de las tres subredes registran el tráfico este-oeste (apis↔apis, apis→data) y crear log-based metric + alerta de tráfico anómalo entre servicios.
-- [ ] Activar **Security Command Center** (tier Standard) y revisar findings del proyecto.
-- [ ] Activar escaneo de vulnerabilidades en Artifact Registry (CVEs de las imágenes).
-- [ ] Dashboard **"Golden Signals de Seguridad"** (Grafana o Cloud Monitoring): auth fallidos (logs de Cloud Run/IAM), tráfico N-S vs E-W (flow logs), CVEs activos (Container Analysis).
-- [ ] Dejar la configuración como código en `deploy/security/`.
+- [x] Flow logs validados registrando el E-W real (apis↔DB) + 3 log-based metrics (`trafico-anomalo-a-datos`, `flujos-este-oeste`, `auth-fallidos`) + alerta `SEGURIDAD trafico anomalo a capa de datos`.
+- [x] **Prueba de fuego con intruso real**: VM efímera en `subnet-public` conectó a Postgres (5/5 intentos TCP), los flow logs registraron `10.10.0.2 → 10.30.0.3:5432`, la métrica contó los flujos y la alerta disparó. **Hallazgo clave**: el peering PSA **no atraviesa** las reglas de firewall de subred — `deny-public-to-data` no protege la base; la detección por flow logs es la línea de defensa real (y quedó demostrada).
+- [ ] Activar **Security Command Center** (tier Standard) y revisar findings — pendiente (requiere activación por consola a nivel de proyecto).
+- [x] Escaneo de CVEs habilitado (`containerscanning`); reporte reproducible `deploy/security/cves-report.sh` (las imágenes actuales aún reportan escaneo pendiente — reejecutar tras el próximo push).
+- [x] Dashboard **"Golden Signals de Seguridad"** en Cloud Monitoring (auth fallidos, tráfico anómalo, N-S por servicio, E-W por flow logs, nota de CVEs) — como código.
+- [x] Configuración como código en `deploy/security/` (`apply.sh` idempotente + dashboard JSON + reporte CVEs).
 
 ### Fase 5 — Módulo D: Chaos + MTTD (1–2 días; requiere Fases 1 y 3)
 
