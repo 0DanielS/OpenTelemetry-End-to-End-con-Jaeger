@@ -63,21 +63,22 @@ Rollback limpio; se reejecutó con baseline de 25 min de operación limpia.
 | Enriquecimiento | Política `LOG errores inyectados con trace_id` (el incidente incluye el log con `trace_id`/`span_id`) |
 | Control (ruido) | Política `ESTATICO error rate > 1% — data-service` (dispara, pero sin contexto) |
 
-### Resultado
-
-<!-- PENDIENTE-EXP2: completar con la salida del runner -->
+### Resultado (2026-09-02)
 
 | Métrica | Valor |
 |---|---|
-| T0 (inyección) | _pendiente_ |
-| T1 (condición de correlación verdadera) | _pendiente_ |
-| **MTTD** | _pendiente_ |
-| Error rate observado | _pendiente (~10%)_ |
-| p99 observado | _pendiente (los errores de 600 ms empujan p99 > 500)_ |
-| ¿SLO degradado? | _pendiente (esperado: sí — 10% ≫ 0.5% del SLO de disponibilidad)_ |
-| ¿Error budget consumido? | _pendiente (budget antes/después del SLO `disponibilidad-99-5`)_ |
-| ¿Alerta accionable? | _pendiente (trace_id en el incidente de la log-based alert)_ |
-| Recuperación post-rollback | _pendiente_ |
+| T0 (revisión con caos sirviendo) | 02:38:12Z |
+| T1 (condición de correlación verdadera) | 02:38:53Z |
+| **MTTD** | **41 segundos** (objetivo: < 120 s) |
+| Error rate observado (ventana 2m) | 2.7% → 19% (promedio ~10%, con la varianza natural del muestreo) |
+| p99 observado | 16.4 ms → 600–738 ms (los errores lentos de 600 ms empujaron el p99 sobre el SLO, como se diseñó) |
+| ¿SLO degradado? | **Sí** — 10% de errores contra un SLO de disponibilidad de 99.5% (presupuesto de 0.5%) |
+| ¿Error budget consumido? | **Sí, cuantificado**: la fracción de budget del SLO `disponibilidad-99-5` pasó de −3.64 a −4.85 — el presupuesto semanal ya estaba agotado por las validaciones del día y el experimento consumió el equivalente a **1.2 presupuestos adicionales** en 8 minutos |
+| ¿Alerta accionable? | Sí — doble confirmación (errores anómalos Y p99 > SLO) + el incidente de la log-based alert incluye el log `chaos.error.injected` con `trace_id`/`span_id` |
+| Umbral estático (error > 1%) | También disparó (1.3%→10.9%) — detecta, pero solo dice "hay errores": sin baseline, sin confirmación de impacto, sin trace |
+| Recuperación post-rollback | p99 de vuelta a 24.8 ms en < 3 min; condición vacía |
+
+El detector osciló brevemente a vacío en dos evaluaciones (02:42–02:43) cuando el ratio de la ventana corta rozó el umbral — el `duration: 0s` reabre al ciclo siguiente; con `duration: 60s` se estabilizaría a costa de +60 s de MTTD. Trade-off documentado.
 
 ## Comparación de calidad de alertas (estático vs. dinámico)
 

@@ -228,10 +228,10 @@ Dependencias: la Fase 5 (chaos/MTTD) necesita las alertas de la Fase 3 y el `dat
 - [x] Detección de anomalías como **umbral dinámico estadístico** (baseline + 2σ aprendidos de la última hora vía subqueries PromQL, evaluación cada 30 s) — decisión documentada en `deploy/monitoring/README.md`.
 - [x] Regla de correlación `error_rate > baseline+2σ` **Y** `p99 > SLO` en una sola política PromQL — **validada con fuego real**: chaos 30% durante 6 min, la condición devolvió valor durante toda la ventana y quedó vacía fuera (se corrigió un NaN en el baseline con denominador filtrado a >0).
 - [x] Alerta enriquecida con `trace_id`: log-based alert sobre `chaos.error.injected` (el incidente incluye el log con `trace_id`/`span_id`) + documentación de la política de correlación con la ruta al trace.
-- [ ] Evidencia cuantitativa de reducción de ruido (nº alertas estáticas vs. correlacionadas en la misma ventana) — se captura formalmente durante los experimentos de la Fase 5.
+- [x] Evidencia cuantitativa de calidad de alertas capturada en la Fase 5: falla gris → estático ciego / dinámico 19 s; errores 10% → estático sin contexto / correlacionado 41 s con `trace_id`; tráfico sano → ambos en silencio.
 - [x] Todo como código en `deploy/monitoring/` (`apply.sh` idempotente + plantillas JSON).
 - [x] Extra: pipeline de métricas sin pérdidas — fix de identidad por proceso (`service.instance.id`), export a 15 s + batch 2 s, y corrección del bug de labels mutados en el middleware SLI que generaba series de alta cardinalidad y puntos duplicados en GMP.
-- [ ] Tuning pendiente para MTTD < 2 min (Fase 5): acortar las ventanas `rate[5m]` de la condición a `[2m]`–`[3m]` (con 5m la correlación tardó ~2.5–3 min en volverse verdadera).
+- [x] Tuning aplicado: ventanas `[2m]` + baseline `[20m:1m]` → MTTD reales de 19 s y 41 s en la Fase 5.
 
 ### Fase 4 — Módulo C: Network & Security (2 días; la VPC y los Flow Logs vienen de Fase 0)
 
@@ -244,11 +244,11 @@ Dependencias: la Fase 5 (chaos/MTTD) necesita las alertas de la Fase 3 y el `dat
 
 ### Fase 5 — Módulo D: Chaos + MTTD (1–2 días; requiere Fases 1 y 3)
 
-- [ ] Experimento 1: latencia **200 ms** en `inventory-api` (reusar mecanismo del Game Day, nueva ficha con hipótesis/blast radius/rollback).
-- [ ] Experimento 2: **error rate 10%** en `data-service` vía `CHAOS_ERROR_RATE`.
-- [ ] Medir **MTTD** en ambos: timestamp de inyección vs. timestamp de la alerta disparada; objetivo < 2 min (ajustar alignment/duración de las alert policies si no llega).
-- [ ] Documentar por experimento: ¿se degradó el SLO?, ¿cuánto error budget se consumió?, ¿la alerta fue accionable (incluyó `trace_id`)?
-- [ ] Escribir `GAMEDAY-2.md` (o extender `GAMEDAY.md`) con capturas y queries reproducibles, como el Game Day anterior.
+- [x] Experimento 1 ejecutado: latencia **200 ms** en `inventory-api` — **MTTD 19 s**; p99 9.95→248 ms; el umbral estático de 500 ms permaneció ciego (falso negativo del control); SLO y budget intactos; recuperación < 3 min.
+- [x] Experimento 2 ejecutado: **error rate 10%** en `data-service` (errores lentos de 600 ms) — **MTTD 41 s** vía la regla de correlación; p99 16→738 ms; SLO degradado y 1.2 presupuestos semanales consumidos (cuantificado); alerta con `trace_id`.
+- [x] **MTTD medido en ambos, muy por dentro del objetivo < 2 min** (19 s y 41 s), con tuning documentado (ventanas [2m], baseline [20m:1m] de operación limpia, evaluación 30 s).
+- [x] Las tres preguntas respondidas por experimento en `GAMEDAY-2.md`, con la comparación cuantitativa estático vs. dinámico (evidencia de ruido pendiente de la Fase 3: cerrada).
+- [x] `GAMEDAY-2.md` escrito con fichas, cronologías, queries reproducibles y observaciones no ocultadas.
 
 ### Fase 6 — Módulo E y entregables (2 días)
 

@@ -136,13 +136,13 @@
   <tr><th></th><th>Experimento 1 — falla gris</th><th>Experimento 2 — errores parciales</th></tr>
   <tr><td>Inyección</td><td>Latencia 200 ms en inventory-api</td><td>Error rate 10% en data-service (errores lentos de 600 ms, como fallan las dependencias reales)</td></tr>
   <tr><td>Detector</td><td>Anomalía de latencia: p99 &gt; baseline+2σ</td><td>Regla de correlación (§4.2)</td></tr>
-  <tr><td>p99 observado</td><td>9.95 ms → 248 ms</td><td><!-- PENDIENTE-EXP2 --> en medición</td></tr>
-  <tr><td><b>MTTD</b></td><td><b>19 segundos</b></td><td><!-- PENDIENTE-EXP2 --> en medición</td></tr>
-  <tr><td>¿SLO degradado?</td><td>No — la degradación queda dentro del SLO de 500 ms</td><td><!-- PENDIENTE-EXP2 --> en medición</td></tr>
-  <tr><td>¿Error budget consumido?</td><td>No — budget 98.2% antes y después</td><td><!-- PENDIENTE-EXP2 --> en medición</td></tr>
+  <tr><td>p99 observado</td><td>9.95 ms → 248 ms</td><td>16.4 ms → 738 ms (errores lentos)</td></tr>
+  <tr><td><b>MTTD</b></td><td><b>19 segundos</b></td><td><b>41 segundos</b></td></tr>
+  <tr><td>¿SLO degradado?</td><td>No — la degradación queda dentro del SLO de 500 ms</td><td>Sí — 10% de errores contra un SLO de 99.5%</td></tr>
+  <tr><td>¿Error budget consumido?</td><td>No — budget 98.2% antes y después</td><td>Sí — 1.2 presupuestos semanales consumidos en 8 min</td></tr>
   <tr><td>¿Alerta accionable?</td><td>Anomalía con contexto de baseline</td><td>Incidente con <code>trace_id</code>/<code>span_id</code> del fallo</td></tr>
 </table>
-<p>El experimento 1 se diseñó deliberadamente como <b>falla gris</b>: 200 ms es del orden del tiempo de respuesta normal del flujo, invisible por diseño para un umbral estático de 500 ms. Su detección es la demostración cuantitativa del valor de los umbrales dinámicos: ante la misma degradación, el sistema estático permanece en silencio (falso negativo) y el dinámico alerta. El experimento 2 ejecuta la hipótesis de errores controlados y exhibe la alerta enriquecida: no solo "hay errores", sino <i>cuál request falló y dónde está su traza</i>. Cronologías completas, valores y queries reproducibles en <code>GAMEDAY-2.md</code>.</p>
+<p>El experimento 1 se diseñó deliberadamente como <b>falla gris</b>: 200 ms es del orden del tiempo de respuesta normal del flujo, invisible por diseño para un umbral estático de 500 ms. Su detección es la demostración cuantitativa del valor de los umbrales dinámicos: ante la misma degradación, el sistema estático permanece en silencio (falso negativo) y el dinámico alerta. El experimento 2 ejecuta la hipótesis de errores controlados y exhibe la alerta enriquecida: no solo "hay errores", sino <i>cuál request falló y dónde está su traza</i>. Ambos experimentos quedaron <b>muy por dentro del objetivo de MTTD &lt; 2 minutos</b> (19 s y 41 s), con rollback verificado y retorno al baseline en menos de 3 minutos. Cronologías completas, valores y queries reproducibles en <code>GAMEDAY-2.md</code>.</p>
 
 <h2 class="pb">7. El sistema completo bajo carga</h2>
 <p>La verificación integral se ejecutó con una carga combinada de k6 (15 usuarios virtuales creando pedidos + 3 consultando analítica, 2 minutos) atravesando simultáneamente todas las capas construidas:</p>

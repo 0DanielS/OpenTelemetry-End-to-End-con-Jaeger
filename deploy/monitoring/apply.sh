@@ -39,6 +39,7 @@ for svc in "${SERVICES[@]}"; do
   apply_policy "$HERE/policy-estatico-latencia.json.tpl" "$svc"
 done
 apply_policy "$HERE/policy-correlacion-data-service.json.tpl"
+apply_policy "$HERE/policy-anomalia-latencia-inventory.json.tpl"
 apply_policy "$HERE/policy-log-trace-id.json.tpl"
 
 TOKEN="$(gcloud auth print-access-token)"
