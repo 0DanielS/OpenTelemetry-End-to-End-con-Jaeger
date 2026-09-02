@@ -212,12 +212,14 @@ Dependencias: la Fase 5 (chaos/MTTD) necesita las alertas de la Fase 3 y el `dat
 
 ### Fase 2 — Módulo A: Service mesh sobre Cloud Run (1–2 días; requiere la VPC de Fase 0)
 
-- [ ] Crear el recurso `Mesh` (`mesh.googleapis.com`).
-- [ ] Adherir `orders-api`, `inventory-api` y `data-service` al mesh: anotación de revisión o `gcloud beta run deploy --mesh=... --network --subnet=subnet-apis`.
-- [ ] Definir el enrutamiento servicio-a-servicio con `HTTPRoute` (gateway `external-mesh` para cargas fuera de GKE).
-- [ ] Evidenciar telemetría L7 servicio-a-servicio en Cloud Monitoring: latencia, tasa de éxito, volumen por par origen→destino.
-- [ ] Autenticación servicio-a-servicio (de paso, cerrar el `--allow-unauthenticated` del Collector con ingress interno).
-- [ ] Documentar en el README la topología de red resultante.
+- [x] Recurso `Mesh` (`obs-mesh`) + zona DNS privada `*.mesh.internal` (`scripts/gcp-mesh-bootstrap.sh`, idempotente).
+- [x] Topología del mesh: `orders-api` como **cliente** (`gcloud beta run deploy --mesh`, sidecar Envoy); `inventory-api` y `data-service` como **destinos** (NEG serverless + backend service `INTERNAL_SELF_MANAGED` + `HTTPRoute` adjunta al mesh).
+- [x] Enrutamiento servicio-a-servicio funcional: `orders → http://inventory-api.mesh.internal` end-to-end con 201 en ~0.3 s; rollback instantáneo vía env var.
+- [x] Telemetría L7 evidenciada con lo que la integración emite: `trafficdirector.xds/server/connected_clients=1` (data plane vivo), el salto del Envoy visible como span dentro de la traza distribuida (que sigue completa a través del mesh), y el ruteo por backend service. **Hallazgo:** las métricas `loadbalancing/https/internal/*` no se emiten para rutas mesh con NEG serverless (limitación del preview).
+- [x] `run.invoker` otorgado a las SAs en los destinos (base de auth servicio-a-servicio).
+- [ ] Cerrar el collector (ingress interno): **bloqueado por conflicto reproducible** — el sidecar Envoy del cliente mesh no arranca con `--vpc-egress=all-traffic` (probe 15020 falla), y sin all-traffic los exports de orders no alcanzan un ingress interno. Se revirtió a público; caminos futuros: OTLP autenticado en el exporter o rutear el OTLP por el propio mesh. `inventory`/`data` quedaron en all-traffic.
+- [x] Hallazgo de incompatibilidad documentado: el sidecar captura todo RFC-1918, así que el cliente del mesh no puede usar la base por IP privada (10.30.0.3) — `orders-api` volvió al socket de Cloud SQL (secreto pinneado a v1); `inventory`/`data` siguen por IP privada.
+- [ ] Documentar topología final en el README (pendiente para el cierre).
 
 ### Fase 3 — Módulo B: AIOps (2 días)
 

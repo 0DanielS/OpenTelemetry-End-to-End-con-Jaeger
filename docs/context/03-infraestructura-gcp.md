@@ -91,6 +91,13 @@ curl -s -H "Authorization: Bearer $TOKEN" --get \
 - VPC Flow Logs, Security Command Center, escaneo de CVEs referenciado.
 - `data-service` y su base `analytics`.
 
+## Service mesh (Fase 2)
+
+- Mesh `obs-mesh` (networkservices) + zona DNS privada `*.mesh.internal → 10.0.0.1` en `obs-vpc`. IaC: `scripts/gcp-mesh-bootstrap.sh`.
+- Cliente: `orders-api` (`gcloud beta run deploy --mesh`, sidecar Envoy). Destinos: `inventory-api` y `data-service` vía NEG serverless + backend service (`*-mesh`, INTERNAL_SELF_MANAGED) + HTTPRoute (`inventory-api.mesh.internal`, `data-service.mesh.internal`).
+- `orders-api` llama a inventory por `INVENTORY_URL=http://inventory-api.mesh.internal`.
+- Hallazgos: (1) el sidecar captura todo RFC-1918 → el cliente mesh no puede usar Cloud SQL por IP privada; orders usa el socket (secreto `orders-database-url` pinneado a la versión 1). (2) El sidecar no arranca con `--vpc-egress=all-traffic` (probe 15020) → el collector sigue con ingress público; inventory/data quedaron en all-traffic. (3) Las métricas `loadbalancing/https/internal/*` no se emiten para rutas mesh serverless; la evidencia L7 son las métricas xds, el span del hop Envoy en la traza y el ruteo funcional.
+
 ## Notas operativas
 
 ### Hallazgo Fase 1: CPU throttling de Cloud Run mata el export de trazas

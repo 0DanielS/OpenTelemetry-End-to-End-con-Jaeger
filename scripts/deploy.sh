@@ -11,13 +11,17 @@ OTEL_ENDPOINT="${OTEL_ENDPOINT:-https://otel-collector-576253872784.us-central1.
 TARGET="${1:-all}"
 
 deploy_orders() {
-  gcloud run deploy orders-api \
+  gcloud beta run deploy orders-api \
     --source service-a \
+    --network obs-vpc \
+    --subnet subnet-apis \
+    --vpc-egress private-ranges-only \
+    --mesh "projects/${PROJECT_ID}/locations/global/meshes/obs-mesh" \
     --project "$PROJECT_ID" \
     --region "$REGION" \
     --service-account "$RUNTIME_SA" \
     --add-cloudsql-instances "$SQL_INSTANCE" \
-    --set-secrets "DATABASE_URL=orders-database-url:latest" \
+    --set-secrets "DATABASE_URL=orders-database-url:1" \
     --set-env-vars "INVENTORY_URL=$INVENTORY_URL,OTEL_SERVICE_NAME=orders-api,OTEL_EXPORTER_OTLP_PROTOCOL=grpc,OTEL_METRIC_EXPORT_INTERVAL=15000,OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_ENDPOINT,DB_POOL_SIZE=5,DB_MAX_OVERFLOW=5" \
     --port 8080 \
     --allow-unauthenticated \
