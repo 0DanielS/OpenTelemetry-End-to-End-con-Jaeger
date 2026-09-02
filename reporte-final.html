@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Reporte Ejecutivo — Sistema Observable Completo en GCP</title>
+<style>
+  @page { size: A4; margin: 22mm 17mm 18mm 17mm; }
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, "Segoe UI", Roboto, Arial, sans-serif; color: #212f3d; font-size: 10pt; line-height: 1.5; margin: 0; }
+  .runhead { position: fixed; top: -14mm; right: 0; font-size: 8pt; font-style: italic; color: #6b7a8a; }
+  h2 { font-size: 14pt; color: #1b4f72; border-bottom: 1.5px solid #d5dde5; padding-bottom: 4px; margin: 22px 0 10px; break-after: avoid; }
+  h3 { font-size: 11pt; color: #21618c; margin: 14px 0 6px; break-after: avoid; }
+  p { margin: 7px 0; text-align: justify; }
+  b { color: #1c2833; }
+  pre.diagram { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 7.6pt; line-height: 1.3; background: #f4f6f8; border: 1px solid #d5dde5; border-radius: 4px; padding: 9px; overflow: hidden; break-inside: avoid; }
+  code { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 8.8pt; color: #b03a5b; background: #faeef2; padding: 0 3px; border-radius: 3px; }
+  pre.cmd { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 8.6pt; background: #f4f6f8; border: 1px solid #d5dde5; border-radius: 4px; padding: 8px; break-inside: avoid; }
+  table { border-collapse: collapse; width: 100%; margin: 9px 0; font-size: 8.8pt; break-inside: avoid; }
+  th, td { border: 1px solid #cdd7e0; padding: 4px 7px; text-align: left; vertical-align: top; }
+  th { background: #eaf0f5; color: #1b4f72; }
+  .fig { margin: 12px 0; text-align: center; break-inside: avoid; }
+  .fig img { max-width: 100%; border: 1px solid #cdd7e0; border-radius: 4px; }
+  .fig .cap { font-size: 8.3pt; color: #6b7a8a; margin-top: 5px; font-style: italic; text-align: center; }
+  ul { margin: 6px 0 6px 18px; padding: 0; }
+  li { margin: 3.5px 0; text-align: justify; }
+  .pb { page-break-before: always; }
+  .hallazgo { background: #fdf6ec; border-left: 3px solid #d68910; padding: 6px 10px; margin: 8px 0; font-size: 9.3pt; break-inside: avoid; }
+  .cover { text-align: center; padding-top: 46mm; }
+  .cover .uni { font-size: 13pt; font-weight: 700; letter-spacing: 0.5px; }
+  .cover .curso { font-size: 10.5pt; margin-top: 10px; }
+  .cover .lab { font-size: 9.5pt; font-style: italic; color: #4a5a68; margin-top: 4px; }
+  .cover h1 { font-size: 21pt; color: #17202a; margin: 26mm 0 8px; line-height: 1.25; }
+  .cover .sub { font-size: 10.5pt; font-style: italic; color: #34495e; }
+  .cover .integrantes { margin-top: 24mm; }
+  .cover .integrantes .t { font-weight: 700; font-size: 10.5pt; margin-bottom: 6px; }
+  .cover .integrantes div { font-size: 9.5pt; margin: 3px 0; }
+  .cover .fecha { font-weight: 700; margin-top: 18mm; }
+  .cover .repos { font-size: 8pt; color: #7b8a98; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<div class="runhead">Laboratorio Integrador — Sistema Observable Completo en GCP</div>
+
+<div class="cover">
+  <div class="uni">UNIVERSIDAD DE LA SABANA</div>
+  <div class="curso">Maestría — Módulo de Observabilidad en Ambientes Productivos</div>
+  <div class="lab">Laboratorio Integrador — Momento 3</div>
+  <h1>Sistema Observable Completo<br>en Google Cloud Platform</h1>
+  <div class="sub">Tres microservicios, service mesh, AIOps, observabilidad de red y seguridad,<br>y validación de resiliencia con chaos engineering y MTTD medido</div>
+  <div class="integrantes">
+    <div class="t">Integrantes del grupo:</div>
+    <div>Nestor Alejandro Rodriguez Benavides — nestorrobe@unisabana.edu.co</div>
+    <div>Carlos Daniel Sandoval — carlossandpar@unisabana.edu.co</div>
+    <div>Peter Alexander Palacios Garnica — peterpaga@unisabana.edu.co</div>
+  </div>
+  <div class="fecha">Septiembre de 2026</div>
+  <div class="repos">Repositorio: github.com/0DanielS/OpenTelemetry-End-to-End-con-Jaeger — tag v1.0</div>
+</div>
+
+<h2 class="pb">1. Resumen ejecutivo</h2>
+<p>Este laboratorio integrador extendió el pipeline de observabilidad del momento anterior hacia un <b>sistema observable de nivel producción en GCP</b>: tres microservicios FastAPI instrumentados con OpenTelemetry (las tres señales correlacionadas por <code>trace_id</code> W3C), una VPC propia con Flow Logs, un service mesh sobre Cloud Run <b>sin migrar a GKE</b>, detección de anomalías con umbrales dinámicos y correlación multi-señal, observabilidad de seguridad con golden signals propios, y dos experimentos de caos formales con el MTTD medido contra las alertas reales.</p>
+<p>Los resultados centrales: el flujo end-to-end atraviesa mesh, VPC e IP privada con <b>0.00% de errores bajo carga</b> (k6: 8,004 requests, p95 380 ms); la regla de correlación AIOps (<code>error_rate &gt; baseline+2σ</code> Y <code>p99 &gt; SLO</code>) detecta inyecciones de fallo reales y calla ante tráfico sano; la detección de tráfico anómalo por flow logs <b>capturó un intruso real</b> (VM de prueba conectando a la base de datos) que las reglas de firewall no bloquearon — demostrando que la observabilidad de red es línea de defensa, no decoración. La autoevaluación de madurez arroja <b>3.4/5</b> con roadmap a 3 meses para alcanzar 4.0.</p>
+<p>Tan importante como lo que funcionó es lo que el proceso enseñó: siete hallazgos de ingeniería reproducibles (sección 8), todos diagnosticados con la propia telemetría del sistema y documentados sin ocultar los intentos fallidos.</p>
+
+<h2>2. Arquitectura completa</h2>
+<pre class="diagram">
+                          Internet (N-S)
+                                │
+       k6 ────────────┬─────────┼──────────────┐
+                      ▼         ▼              ▼
+                 orders-api   data-service   Grafana ──── subnet-public (10.10.0.0/24)
+                 [+ Envoy]        │             │
+                      │ mesh      │             │ PromQL
+        inventory-api.mesh.internal             ▼
+                      ▼           │        Managed Prometheus
+                inventory-api     │
+                      │           │        ┌── OTel Collector ──▶ Cloud Trace / GMP / Cloud Logging
+   subnet-apis        │           │        │        ▲ OTLP gRPC (3 servicios)
+   (10.10.1.0/24)     ▼           ▼        │
+                Cloud SQL (IP privada 10.30.0.3, peering PSA)
+                [orders · inventory]  ←── VPC Flow Logs en las 3 subredes
+</pre>
+<table>
+  <tr><th>Componente</th><th>Rol</th><th>Particularidad</th></tr>
+  <tr><td>orders-api (service-a)</td><td>Entrada del flujo; crea pedidos</td><td>Cliente del mesh (sidecar Envoy); llama a inventory por <code>inventory-api.mesh.internal</code>; DB por socket</td></tr>
+  <tr><td>inventory-api (service-b)</td><td>Reserva de stock (UPDATE atómico)</td><td>Destino del mesh (NEG serverless + HTTPRoute); chaos de latencia; DB por IP privada; min-instances=1</td></tr>
+  <tr><td>data-service (service-c)</td><td>Consultas analíticas de solo lectura</td><td>DB spans con semconv completas; chaos de error rate con errores lentos; no-cpu-throttling</td></tr>
+  <tr><td>OTel Collector</td><td>Gateway OTLP → backends GCP</td><td>Exporters googlecloud + googlemanagedprometheus; batch 2 s</td></tr>
+  <tr><td>obs-vpc</td><td>Red propia, 3 subredes</td><td>Flow Logs (sampling 0.5) en todas; firewall apis→data; peering PSA para Cloud SQL</td></tr>
+  <tr><td>obs-mesh</td><td>Cloud Service Mesh</td><td>Sobre Cloud Run, sin GKE; DNS privado <code>*.mesh.internal</code></td></tr>
+</table>
+<p>Toda la infraestructura es reproducible como código: <code>scripts/gcp-bootstrap.sh</code> (base), <code>gcp-network-bootstrap.sh</code> (VPC/flow logs/firewall/PSA), <code>gcp-mesh-bootstrap.sh</code> (mesh completo), <code>setup-dataservice-db.sh</code> (datos), <code>deploy/monitoring/apply.sh</code> (SLOs y alertas) y <code>deploy/security/apply.sh</code> (seguridad).</p>
+
+<h2 class="pb">3. Módulo A — Arquitectura observable: data-service y semconv</h2>
+<p>El tercer microservicio trata el acceso a datos como dominio observable de primera clase. Cada consulta produce un span cliente construido con las <b>DB Semantic Conventions</b> de OpenTelemetry, verificado en Cloud Trace:</p>
+<table>
+  <tr><th>Atributo</th><th>Valor observado</th></tr>
+  <tr><td><code>db.system.name</code> / <code>db.namespace</code></td><td>postgresql / orders</td></tr>
+  <tr><td><code>db.operation.name</code> / <code>db.collection.name</code></td><td>SELECT / orders</td></tr>
+  <tr><td><code>db.query.text</code></td><td>SELECT product_id, COUNT(*) AS orders_count…</td></tr>
+  <tr><td><code>server.address</code> / <code>server.port</code></td><td>10.30.0.3 / 5432</td></tr>
+</table>
+<p>El valor diagnóstico se demostró de inmediato: la traza separa el costo de <b>conexión</b> (68 ms en instancia fría) del costo del <b>motor</b> (7.5 ms la query) — la diferencia entre "la base está lenta" y "abrir conexión está caro". La correlación de las tres señales se conserva: el log <code>stats.orders.served</code> lleva el mismo <code>trace_id</code> que la traza con el span SQL.</p>
+<div class="fig"><!-- FIGURA: captura Cloud Trace del span SELECT orders.orders con atributos --> <div class="cap">Figura 1 — Cloud Trace: cascada de data-service con el span SELECT orders.orders y sus atributos semconv.</div></div>
+
+<h3>3.1 Service mesh sobre Cloud Run (sin GKE)</h3>
+<p>La malla se implementó con la integración nativa de Cloud Service Mesh para Cloud Run: recurso <code>Mesh</code>, zona DNS privada <code>*.mesh.internal</code>, y por cada destino un NEG serverless + backend service <code>INTERNAL_SELF_MANAGED</code> + <code>HTTPRoute</code>. <code>orders-api</code> se adhiere como cliente (<code>gcloud beta run deploy --mesh</code>) y llama a inventory por su nombre lógico de malla. El tráfico E-W quedó bajo control de la plataforma con evidencia triple: el <b>salto del Envoy visible como span</b> dentro de la traza distribuida (que permanece completa), la métrica de control <code>xds/server/connected_clients=1</code>, y el enrutamiento funcional (201 en ~0.3 s por la ruta de malla).</p>
+
+<h2 class="pb">4. Módulo B — AIOps: detección con umbrales dinámicos y correlación</h2>
+<p>Sobre seis SLOs formales (disponibilidad 99.5% y latencia&lt;500 ms al 95%, por servicio, con error budget calculado por Cloud Monitoring) se montaron dos sistemas de alertas en paralelo para poder compararlos:</p>
+<ul>
+  <li><b>Grupo de control (estático):</b> 6 políticas clásicas — error rate &gt; 1% y p99 &gt; 500 ms por servicio.</li>
+  <li><b>Detección dinámica:</b> la regla de correlación exigida por la consigna, implementada como una sola política PromQL evaluada cada 30 s: <code>error_rate &gt; baseline + 2σ</code> <b>Y</b> <code>latency_p99 &gt; SLO</code>, donde baseline y σ se aprenden solos de una ventana móvil. La conjunción es el reductor de ruido: un pico de errores sin impacto en latencia, o latencia alta sin errores, no despierta a nadie.</li>
+</ul>
+<p>La alerta llega <b>accionable</b>: una log-based alert adjunta al incidente el log del fallo con su <code>trace_id</code> y <code>span_id</code> — del correo a la traza causante en dos clics.</p>
+<h3>4.1 Validación con fuego real y endurecimiento del detector</h3>
+<p>La regla se validó inyectando 30% de errores en data-service: la condición devolvió valor durante toda la ventana de inyección y quedó vacía fuera de ella. El camino dejó dos defectos corregidos que ilustran la ingeniería real de un detector estadístico: (1) los pasos sin tráfico producían <code>0/0=NaN</code> que envenenaba el baseline y silenciaba la alerta — corregido filtrando el denominador; (2) la σ aprendida de una ventana con historial de experimentos quedó tan inflada (110 ms) que una degradación real de 200 ms pasaba por debajo del umbral — corregido acotando la ventana de aprendizaje a operación limpia y documentando la lección: <i>un detector estadístico vale lo que valga la limpieza de su ventana de entrenamiento</i>.</p>
+
+<h2 class="pb">5. Módulo C — Network &amp; Security Observability</h2>
+<h3>5.1 Golden Signals de Seguridad</h3>
+<p>Dashboard como código en Cloud Monitoring con las señales del dominio: intentos de autenticación fallidos (401/403 por servicio), tráfico anómalo hacia la capa de datos, tráfico N-S por servicio, flujos E-W de la VPC, y CVEs activos (escaneo de Container Analysis sobre Artifact Registry). Tres métricas basadas en logs convierten los VPC Flow Logs en series alertables.</p>
+<h3>5.2 La prueba del intruso: detección donde la prevención falla</h3>
+<p>Para validar la detección se ejecutó un ataque controlado: una VM efímera en <code>subnet-public</code> intentando conectar a Cloud SQL. El resultado fue doblemente valioso:</p>
+<ul>
+  <li><b>La prevención tenía un hueco real:</b> las 5 conexiones TCP entraron — el peering de Private Services Access <b>no atraviesa las reglas de firewall de subred</b>, de modo que la regla <code>deny-public-to-data</code> no protege la base.</li>
+  <li><b>La detección funcionó de punta a punta:</b> los flow logs registraron cada flujo <code>10.10.0.2 → 10.30.0.3:5432</code>, la métrica <code>trafico-anomalo-a-datos</code> los contó y la alerta <code>SEGURIDAD</code> disparó con notificación.</li>
+</ul>
+<div class="fig"><!-- FIGURA: dashboard golden signals con la barra del intruso --> <div class="cap">Figura 2 — Golden Signals de Seguridad: la barra de tráfico anómalo corresponde al intruso; N-S y E-W muestran la carga k6.</div></div>
+<p><b>Limitación declarada:</b> Security Command Center exige pertenecer a una Organización de Google Cloud y el proyecto vive en una cuenta personal (verificado en consola). La postura de configuración se cubre parcialmente con CVE scanning y audit logs; la adopción de SCC queda en el roadmap condicionada a la migración organizacional.</p>
+
+<h2 class="pb">6. Módulo D — Chaos Engineering y MTTD</h2>
+<p>Dos experimentos formales con el protocolo del Game Day (hipótesis, blast radius acotado, rollback por variables de entorno con default seguro, criterio de aborto), ejecutados con tráfico continuo y cronómetro contra las alertas reales:</p>
+<table>
+  <tr><th></th><th>Experimento 1 — falla gris</th><th>Experimento 2 — errores parciales</th></tr>
+  <tr><td>Inyección</td><td>Latencia 200 ms en inventory-api (<code>CHAOS_LATENCY_MS</code>)</td><td>Error rate 10% en data-service, errores lentos de 600 ms (<code>CHAOS_ERROR_RATE</code>)</td></tr>
+  <tr><td>Detector esperado</td><td>Anomalía de latencia p99 vs baseline+2σ</td><td>Regla de correlación (error rate anómalo Y p99&gt;SLO)</td></tr>
+  <tr><td>Umbral estático (control)</td><td>p99&gt;500 ms — <b>ciego por diseño</b> ante 200 ms</td><td>error rate&gt;1% — dispara pero sin contexto</td></tr>
+  <tr><td>p99 observado</td><td>~30 ms → 248 ms</td><td><!-- PENDIENTE-EXP2 --></td></tr>
+  <tr><td><b>MTTD</b></td><td><!-- PENDIENTE-EXP1: XXs --></td><td><!-- PENDIENTE-EXP2: XXs --></td></tr>
+  <tr><td>¿SLO degradado?</td><td><!-- PENDIENTE-EXP1 --></td><td><!-- PENDIENTE-EXP2 --></td></tr>
+  <tr><td>¿Error budget consumido?</td><td><!-- PENDIENTE-EXP1 --></td><td><!-- PENDIENTE-EXP2 --></td></tr>
+  <tr><td>¿Alerta accionable?</td><td><!-- PENDIENTE-EXP1 --></td><td><!-- PENDIENTE-EXP2 --></td></tr>
+</table>
+<p>El experimento 1 se diseñó deliberadamente como <b>falla gris</b>: 200 ms es del orden del tiempo de respuesta normal del flujo completo, invisible para el umbral estático de 500 ms. Detectarla separa un sistema de observabilidad decorativo de uno útil — y es la comparación cuantitativa de calidad de alertas que exige la consigna: el sistema estático calla ante la degradación real (falso negativo) mientras el dinámico la detecta; y ante errores parciales el estático grita sin contexto mientras el correlacionado entrega el <code>trace_id</code> causante.</p>
+<p>Detalle completo de cronologías, valores y evidencias en <code>GAMEDAY-2.md</code>.</p>
+
+<h2 class="pb">7. Evidencias del pipeline bajo carga</h2>
+<table>
+  <tr><th>Verificación</th><th>Resultado</th></tr>
+  <tr><td>k6 combinado (15 VUs pedidos + 3 VUs analítica, 2 min) contra el sistema completo</td><td>8,004 requests, <b>0.00% fallos</b>, 65.9 req/s, p95 380 ms</td></tr>
+  <tr><td>Correlación cross-signal a través del mesh</td><td>Traza de 16 spans orders→Envoy→inventory→SQL bajo un <code>trace_id</code>; logs con el mismo id</td></tr>
+  <tr><td>Flow logs E-W</td><td>Pares <code>10.10.1.x ↔ 10.30.0.3:5432</code> en ambos sentidos</td></tr>
+  <tr><td>SLOs / error budget</td><td>6 SLOs activos con budget visible en Cloud Monitoring</td></tr>
+  <tr><td>Ruido de alertas con tráfico sano</td><td>8 políticas en verde durante toda la carga</td></tr>
+</table>
+<div class="fig"><!-- FIGURA: dashboard Grafana durante k6 --> <div class="cap">Figura 3 — Dashboard SLI/SLO durante la carga: disponibilidad 100%, burn rate 0, cold start visible cayendo a régimen.</div></div>
+
+<h2>8. Hallazgos de ingeniería</h2>
+<div class="hallazgo"><b>H1 — El CPU throttling de Cloud Run mata el export de trazas.</b> Con CPU solo durante requests, el hilo del BatchSpanProcessor se congela: spans 25 minutos tarde o perdidos, mientras métricas (acumulativas) y logs fluyen — un fallo silencioso y traicionero. Fix: <code>--no-cpu-throttling</code> + <code>OTEL_BSP_SCHEDULE_DELAY=1000</code> → trazas en ~25 s. Los servicios de requests largos casi no lo sufren; los de ~10 ms, siempre.</div>
+<div class="hallazgo"><b>H2 — Identidad de instancia y labels mutados.</b> Sin <code>service.instance.id</code> único las instancias colisionan en Managed Prometheus; y un dict de labels mutado entre el +1 y el −1 del gauge de saturación creaba series de alta cardinalidad (una por <code>product_id</code>) y puntos duplicados. Ambos corregidos; el error "Duplicate TimeSeries" que sonaba cada 15 s desapareció.</div>
+<div class="hallazgo"><b>H3 — El sidecar del mesh captura todo RFC-1918.</b> Un cliente de malla no puede hablar con Cloud SQL por IP privada (el Envoy intercepta la conexión y el arranque se cuelga). Trade-off documentado: orders-api volvió al socket; los no-clientes siguen por IP privada visibles en flow logs.</div>
+<div class="hallazgo"><b>H4 — Sidecar del mesh + egress all-traffic: incompatibles (reproducible).</b> El probe del Envoy (15020) no levanta, lo que bloquea cerrar el collector con ingress interno. Caminos futuros: OTLP autenticado o rutear el OTLP por la propia malla.</div>
+<div class="hallazgo"><b>H5 — El peering PSA no pasa por el firewall de subred.</b> La regla de deny hacia la capa de datos era cosmética; la detección por flow logs es la línea de defensa real — demostrado con el intruso.</div>
+<div class="hallazgo"><b>H6 — σ contaminada = detector ciego.</b> El baseline+2σ aprendido de una ventana con experimentos previos elevó el umbral a 361 ms y no vio la degradación de 248 ms. Ventana de aprendizaje acotada a operación limpia; en producción: baselines largos con supresión de ventanas de mantenimiento.</div>
+<div class="hallazgo"><b>H7 — Mesh + escala a cero + timeout corto = fallo del primer request.</b> El cold start del destino a través de la malla supera los 10 s del cliente. Mitigado con <code>min-instances=1</code> en el destino del hot path; alternativas: timeouts alineados o retries con backoff (la remediación que el Game Day 3.2 había recomendado).</div>
+
+<h2 class="pb">9. Madurez de observabilidad y roadmap</h2>
+<p>Autoevaluación contra el Observability Foundation Blueprint (detalle y justificaciones en <code>docs/madurez-observabilidad.md</code>):</p>
+<table>
+  <tr><th>Dominio</th><th>Nivel</th><th>Dominio</th><th>Nivel</th></tr>
+  <tr><td>Tres Pilares</td><td><b>4</b></td><td>Security Observability</td><td><b>3</b></td></tr>
+  <tr><td>OpenTelemetry</td><td><b>4</b></td><td>DataOps</td><td><b>3</b></td></tr>
+  <tr><td>AIOps</td><td><b>3</b></td><td>SRE</td><td><b>3</b></td></tr>
+  <tr><td>Network Observability</td><td><b>3</b></td><td>Chaos Engineering</td><td><b>4</b></td></tr>
+</table>
+<p><b>Global: 3.4/5.</b> Roadmap a 3 meses para ~4.0: <b>mes 1</b> — confiabilidad de la detección (baselines estacionales limpios con supresión de ventanas de caos, runbook por alerta, burn-rate multiventana); <b>mes 2</b> — costo y seguridad del pipeline (tail-based sampling 10–25% que cierra el overhead de −38% medido, OTLP autenticado + collector interno, Organización + SCC Standard); <b>mes 3</b> — automatización (chaos mensual programado con verificación de MTTD, observabilidad de queries lentas, madurez del mesh cuando salga de preview).</p>
+
+<h2>10. Conclusiones</h2>
+<ul>
+  <li>El sistema cumple el objetivo integrador: tres microservicios con las tres señales correlacionadas, mesh operativo sin GKE, red y seguridad observables, y detección validada con experimentos — todo reproducible como código sobre GCP.</li>
+  <li>La tesis del módulo quedó demostrada empíricamente dos veces: la observabilidad detecta lo que la prevención no bloquea (intruso vs. firewall) y lo que los umbrales estáticos no ven (falla gris de 200 ms vs. umbral de 500 ms).</li>
+  <li>Los siete hallazgos de ingeniería — todos diagnosticados con la telemetría del propio sistema — son el argumento más fuerte de que el pipeline funciona: un sistema de observabilidad se prueba usándolo para depurarse a sí mismo.</li>
+  <li>La madurez de 3.4/5 es honesta: fundamentos gestionados, operación en nivel definido, y un roadmap accionable cuyo primer mes ataca la fragilidad más real encontrada — la calidad de los baselines de detección.</li>
+</ul>
+
+</body>
+</html>
