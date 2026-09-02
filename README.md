@@ -86,11 +86,19 @@ Proyecto `opentelemetry-nrb`, región `us-central1`. Los 4 servicios corren en *
 
 Visores nativos: [Cloud Trace](https://console.cloud.google.com/traces/list?project=opentelemetry-nrb) · [Cloud Logging](https://console.cloud.google.com/logs/query?project=opentelemetry-nrb) · [Managed Prometheus](https://console.cloud.google.com/monitoring/prometheus?project=opentelemetry-nrb)
 
-> ⚠️ **La base de datos (Cloud SQL `otel-pg`) se mantiene APAGADA fuera de sesión** para no consumir créditos. Antes de probar los servicios cloud:
-> ```bash
-> gcloud sql instances patch otel-pg --activation-policy=ALWAYS   # encender (~5 min)
-> gcloud sql instances patch otel-pg --activation-policy=NEVER    # apagar al terminar
-> ```
+### 🎓 Acceso directo para evaluación (todo encendido)
+
+El entorno permanece **encendido durante el período de evaluación** — los servicios y dashboards responden de inmediato, sin pasos previos:
+
+| Qué ver | URL | Acceso |
+|---|---|---|
+| **Dashboard SLI/SLO en vivo** (Grafana, 9 paneles) | https://grafana-576253872784.us-central1.run.app/d/observabilidad-gcp | Público (anónimo) |
+| Crear un pedido (genera traza+métricas+logs) | `curl -X POST https://orders-api-576253872784.us-central1.run.app/orders -H "Content-Type: application/json" -d '{"product_id":"p1","quantity":1,"customer_id":"demo"}'` | Público |
+| Analítica con DB spans semconv | https://data-service-576253872784.us-central1.run.app/stats/top-products | Público |
+
+Sugerencia: ejecutar unos `POST /orders`, esperar ~30 s y ver en Grafana (rango "Last 15 minutes") cómo se mueven los SLIs; la traza correspondiente aparece en Cloud Trace con la cascada orders → mesh → inventory → SQL. Los visores de la consola (Cloud Trace, Monitoring, dashboards de seguridad) requieren acceso al proyecto — disponible a solicitud, y todas sus vistas están capturadas en `evidencias/` y en el reporte.
+
+> Guardrail de coste (fuera del período de evaluación): `gcloud sql instances patch otel-pg --activation-policy=NEVER` apaga la base; `ALWAYS` la enciende (~5 min).
 
 ### CI/CD — cómo se despliega
 
