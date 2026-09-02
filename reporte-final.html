@@ -19,7 +19,7 @@
   th, td { border: 1px solid #cdd7e0; padding: 4px 7px; text-align: left; vertical-align: top; }
   th { background: #eaf0f5; color: #1b4f72; }
   .fig { margin: 12px 0; text-align: center; break-inside: avoid; }
-  .fig img { max-width: 100%; border: 1px solid #cdd7e0; border-radius: 4px; }
+  .fig img { max-width: 92%; max-height: 78mm; border: 1px solid #cdd7e0; border-radius: 4px; }
   .fig .cap { font-size: 8.3pt; color: #6b7a8a; margin-top: 5px; font-style: italic; text-align: center; }
   ul { margin: 6px 0 6px 18px; padding: 0; }
   li { margin: 3.5px 0; text-align: justify; }
@@ -102,7 +102,7 @@
   <tr><td><code>server.address</code> / <code>server.port</code></td><td>10.30.0.3 / 5432</td></tr>
 </table>
 <p>El valor diagnóstico es inmediato: la traza separa el costo de <b>conexión</b> (68 ms en instancia fría) del costo del <b>motor</b> (7.5 ms la query) — la diferencia entre "la base está lenta" y "abrir conexión está caro". La correlación de las tres señales se conserva: el log <code>stats.orders.served</code> lleva el mismo <code>trace_id</code> que la traza con el span SQL, y las métricas SLI del servicio aparecen automáticamente en los dashboards vía la variable <code>$service</code>.</p>
-<div class="fig"><!-- FIGURA 1: captura Cloud Trace del span SELECT orders.orders con atributos --> <div class="cap">Figura 1 — Cloud Trace: cascada de data-service con el span SELECT orders.orders y sus atributos de Semantic Conventions.</div></div>
+<div class="fig"><img src="evidencias/01-traza-db-spans-semconv.jpg" alt="Figura 1"> <div class="cap">Figura 1 — Cloud Trace: cascada de data-service con el span SELECT orders.orders y sus atributos de Semantic Conventions.</div></div>
 
 <h3>3.2 Service mesh sobre Cloud Run — sin GKE</h3>
 <p>La malla de servicios se implementó con la integración nativa de <b>Cloud Service Mesh para Cloud Run</b>, evitando por completo la migración a Kubernetes: un recurso <code>Mesh</code> (<code>obs-mesh</code>), una zona DNS privada <code>*.mesh.internal</code>, y por cada servicio destino un NEG serverless + backend service <code>INTERNAL_SELF_MANAGED</code> + <code>HTTPRoute</code> adjunta a la malla. <code>orders-api</code> se adhiere como cliente (<code>gcloud beta run deploy --mesh</code>, que inyecta el sidecar Envoy) y llama a inventory por su <b>nombre lógico de malla</b>: <code>http://inventory-api.mesh.internal</code>.</p>
@@ -119,12 +119,12 @@
 <h3>4.3 Validación con fuego real</h3>
 <p>La regla se validó inyectando 30% de errores en data-service durante 6 minutos: la condición de correlación devolvió valor durante toda la ventana de inyección y quedó vacía fuera de ella — sin falsos positivos ni falsos negativos en la validación. El detector quedó afinado para los experimentos formales con ventanas de evaluación de 2 minutos y baseline aprendido de operación limpia.</p>
 
-<h2 class="pb">5. Módulo C — Network &amp; Security Observability</h2>
+<h2>5. Módulo C — Network &amp; Security Observability</h2>
 <h3>5.1 La red como fuente de telemetría</h3>
 <p>La VPC <code>obs-vpc</code> segmenta el sistema en tres subredes (pública para visualización, privada para las APIs y el collector, privada para la capa de datos) con <b>VPC Flow Logs activos en todas</b> (sampling 0.5, agregación 5 s). El tráfico este-oeste real es visible y consultable: los pares <code>10.10.1.x ↔ 10.30.0.3:5432</code> (servicios ↔ base por IP privada) aparecen en cada corrida de carga. Tres métricas basadas en logs convierten esos flujos en series de tiempo alertables: <code>flujos-este-oeste</code>, <code>trafico-anomalo-a-datos</code> y <code>auth-fallidos</code>.</p>
 <h3>5.2 Golden Signals de Seguridad</h3>
 <p>El dashboard del dominio — creado como código en Cloud Monitoring — reúne las señales de oro de seguridad: <b>intentos de autenticación fallidos</b> (401/403 por servicio), <b>tráfico anómalo hacia la capa de datos</b>, <b>tráfico Norte-Sur</b> por servicio, <b>flujos Este-Oeste</b> de la VPC y <b>CVEs activos</b> (escaneo automático de Container Analysis sobre cada imagen publicada en Artifact Registry).</p>
-<div class="fig"><!-- FIGURA 2: dashboard golden signals --> <div class="cap">Figura 2 — Golden Signals de Seguridad: tráfico anómalo detectado (barra azul), N-S y E-W durante la carga k6.</div></div>
+<div class="fig"><img src="evidencias/02-golden-signals-seguridad.jpg" alt="Figura 2"> <div class="cap">Figura 2 — Golden Signals de Seguridad: la barra azul es la prueba de intrusión controlada detectada por flow logs; abajo, tráfico N-S por servicio y flujos E-W durante la carga. La alerta Critical asociada llegó al correo del equipo.</div></div>
 <h3>5.3 Detección demostrada de punta a punta</h3>
 <p>La capacidad de detección se validó con una <b>prueba de intrusión controlada</b>: una VM efímera en la subred pública intentando conectarse a Cloud SQL. La cadena completa funcionó — los flow logs registraron cada flujo <code>10.10.0.2 → 10.30.0.3:5432</code>, la métrica los contó al minuto y la alerta <code>SEGURIDAD trafico anomalo a capa de datos</code> generó el incidente con su notificación. La prueba demuestra <b>defensa en profundidad observada</b>: la capa de detección identifica accesos a la base de datos desde orígenes no autorizados de forma independiente de la segmentación de red.</p>
 <h3>5.4 Oportunidad de mejora: Security Command Center</h3>
@@ -144,7 +144,7 @@
 </table>
 <p>El experimento 1 se diseñó deliberadamente como <b>falla gris</b>: 200 ms es del orden del tiempo de respuesta normal del flujo, invisible por diseño para un umbral estático de 500 ms. Su detección es la demostración cuantitativa del valor de los umbrales dinámicos: ante la misma degradación, el sistema estático permanece en silencio (falso negativo) y el dinámico alerta. El experimento 2 ejecuta la hipótesis de errores controlados y exhibe la alerta enriquecida: no solo "hay errores", sino <i>cuál request falló y dónde está su traza</i>. Ambos experimentos quedaron <b>muy por dentro del objetivo de MTTD &lt; 2 minutos</b> (19 s y 41 s), con rollback verificado y retorno al baseline en menos de 3 minutos. Cronologías completas, valores y queries reproducibles en <code>GAMEDAY-2.md</code>.</p>
 
-<h2 class="pb">7. El sistema completo bajo carga</h2>
+<h2>7. El sistema completo bajo carga</h2>
 <p>La verificación integral se ejecutó con una carga combinada de k6 (15 usuarios virtuales creando pedidos + 3 consultando analítica, 2 minutos) atravesando simultáneamente todas las capas construidas:</p>
 <table>
   <tr><th>Capa verificada</th><th>Resultado</th></tr>
@@ -155,7 +155,7 @@
   <tr><td>Calidad de alertas con tráfico sano</td><td>Las 8 políticas en silencio — cero falsos positivos</td></tr>
   <tr><td>Dashboards</td><td>Grafana (SLI/SLO) y Golden Signals de Seguridad reflejando la carga en vivo</td></tr>
 </table>
-<div class="fig"><!-- FIGURA 3: dashboard Grafana durante k6 --> <div class="cap">Figura 3 — Dashboard SLI/SLO durante la carga: disponibilidad 100%, burn rate 0, percentiles en régimen.</div></div>
+<div class="fig"><img src="evidencias/03-dashboard-grafana-carga.jpg" alt="Figura 3"> <div class="cap">Figura 3 — Dashboard SLI/SLO (Grafana sobre Managed Prometheus) durante la carga: disponibilidad 100%, burn rate 0.9, latencias por servicio en régimen y error rate en cero tras el arranque.</div></div>
 
 <h2>8. Afinación del pipeline de telemetría</h2>
 <p>Llevar el pipeline a calidad de producción incluyó una capa de afinación fina, toda validada con la propia telemetría del sistema y persistida como código:</p>
@@ -167,7 +167,7 @@
   <li><b>Disponibilidad del hot path:</b> <code>min-instances=1</code> en el destino del mesh, eliminando el costo de arranque en frío de la ruta crítica.</li>
 </ul>
 
-<h2 class="pb">9. Madurez de observabilidad y roadmap</h2>
+<h2>9. Madurez de observabilidad y roadmap</h2>
 <p>Autoevaluación contra el Observability Foundation Blueprint — 8 dominios, escala 1–5, cada nivel justificado con evidencia verificable del repositorio (detalle en <code>docs/madurez-observabilidad.md</code>):</p>
 <table>
   <tr><th>Dominio</th><th>Nivel</th><th>Sustento principal</th></tr>
