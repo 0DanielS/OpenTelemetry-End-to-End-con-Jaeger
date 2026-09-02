@@ -91,7 +91,7 @@
 </table>
 <p>Infraestructura reproducible como código: <code>scripts/gcp-bootstrap.sh</code> (base y datos), <code>gcp-network-bootstrap.sh</code> (VPC, flow logs, firewall, PSA), <code>gcp-mesh-bootstrap.sh</code> (mesh completo), <code>setup-dataservice-db.sh</code> (usuario analítico de mínimo privilegio), <code>deploy/monitoring/apply.sh</code> (SLOs, alertas y correlación) y <code>deploy/security/apply.sh</code> (métricas, alerta y dashboard de seguridad). El despliegue continuo corre por GitHub Actions con Workload Identity Federation (sin llaves) y secretos en Secret Manager.</p>
 
-<h2 class="pb">3. Módulo A — Arquitectura observable completa</h2>
+<h2>3. Módulo A — Arquitectura observable completa</h2>
 <h3>3.1 data-service: el acceso a datos como dominio observable</h3>
 <p>El tercer microservicio eleva DataOps a ciudadano de primera clase. Cada consulta produce un span cliente construido con las <b>DB Semantic Conventions</b> de OpenTelemetry — el estándar que hace la telemetría portable entre herramientas — verificado en Cloud Trace:</p>
 <table>
@@ -108,7 +108,7 @@
 <p>La malla de servicios se implementó con la integración nativa de <b>Cloud Service Mesh para Cloud Run</b>, evitando por completo la migración a Kubernetes: un recurso <code>Mesh</code> (<code>obs-mesh</code>), una zona DNS privada <code>*.mesh.internal</code>, y por cada servicio destino un NEG serverless + backend service <code>INTERNAL_SELF_MANAGED</code> + <code>HTTPRoute</code> adjunta a la malla. <code>orders-api</code> se adhiere como cliente (<code>gcloud beta run deploy --mesh</code>, que inyecta el sidecar Envoy) y llama a inventory por su <b>nombre lógico de malla</b>: <code>http://inventory-api.mesh.internal</code>.</p>
 <p>La observabilidad L7 resultante tiene evidencia triple: el <b>salto del Envoy aparece como span propio dentro de la traza distribuida</b> (que permanece completa de punta a punta — la propagación W3C atraviesa la malla), el plano de control confirma el data plane vivo (<code>trafficdirector.googleapis.com/xds/server/connected_clients = 1</code>), y el enrutamiento por nombre lógico opera en producción con 201 en ~0.3 s. Con esto, el sistema queda con <b>tres planos de visibilidad de red complementarios</b>: flow logs (L3/L4, conexiones), mesh (L7, semántica HTTP) y OTel (aplicación y negocio).</p>
 
-<h2 class="pb">4. Módulo B — AIOps: detección dinámica con correlación</h2>
+<h2>4. Módulo B — AIOps: detección dinámica con correlación</h2>
 <h3>4.1 SLOs formales con error budget</h3>
 <p>Cada servicio tiene dos SLOs en Cloud Monitoring calculados sobre sus propias métricas SLI vía Managed Prometheus, con el error budget visible en consola: <b>disponibilidad 99.5%</b> y <b>95% de requests bajo 500 ms</b> (ventana móvil de 7 días). Sobre ellos, el dashboard de Grafana muestra burn rate (umbral de paging 14.4) y los cuatro SLI clásicos.</p>
 <h3>4.2 La regla de correlación</h3>
@@ -130,7 +130,7 @@
 <h3>5.4 Oportunidad de mejora: Security Command Center</h3>
 <p>El complemento natural del dominio es <b>SCC</b>, que añade la vista de <i>postura</i> (configuraciones inseguras, permisos excesivos, agregación de hallazgos) a la vista de <i>eventos</i> ya implementada. Su activación requiere que el proyecto pertenezca a una Organización de Google Cloud — no disponible en el entorno académico actual (cuenta personal). Es la mejora priorizada del roadmap (mes 2): migrar el proyecto a una organización, activar SCC Standard (sin costo) y hacer triage inicial de findings. El diseño actual ya deja listo el terreno: APIs habilitadas, escaneo de CVEs operando y el dashboard preparado para incorporar la señal de postura.</p>
 
-<h2 class="pb">6. Módulo D — Chaos Engineering y validación del MTTD</h2>
+<h2>6. Módulo D — Chaos Engineering y validación del MTTD</h2>
 <p>Dos experimentos formales con protocolo completo (hipótesis Given/When/Then, blast radius acotado, rollback por variables de entorno con default seguro, criterio de aborto), ejecutados con tráfico continuo de fondo y cronómetro entre la inyección (T0) y la detección por las alertas reales (T1):</p>
 <table>
   <tr><th></th><th>Experimento 1 — falla gris</th><th>Experimento 2 — errores parciales</th></tr>
