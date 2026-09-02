@@ -23,7 +23,7 @@ processors:
         value: observabilidad
         action: upsert
   batch:
-    timeout: 5s
+    timeout: 2s
     send_batch_size: 1024
 
 exporters:

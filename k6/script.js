@@ -1,10 +1,18 @@
 import http from 'k6/http';
-import { check } from 'k6';
+import { check, sleep } from 'k6';
 
 const BASE_URL = __ENV.BASE_URL || 'http://localhost:8080';
+const DATA_URL = __ENV.DATA_URL || 'http://localhost:8082';
 
 export const options = {
   scenarios: {
+    stats: {
+      executor: 'constant-vus',
+      vus: 3,
+      duration: '4m20s',
+      exec: 'stats',
+      tags: { phase: 'stats' },
+    },
     warmup: {
       executor: 'constant-vus',
       vus: 5,
@@ -54,4 +62,11 @@ export default function () {
   });
 
   check(res, { 'status is 201': (r) => r.status === 201 });
+}
+
+export function stats() {
+  const endpoint = __ITER % 2 === 0 ? '/stats/orders' : '/stats/top-products';
+  const res = http.get(`${DATA_URL}${endpoint}`);
+  check(res, { 'stats is 200': (r) => r.status === 200 });
+  sleep(1);
 }

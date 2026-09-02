@@ -190,7 +190,7 @@ Esperar la nueva revisión y repetir una petición para comprobar que la latenci
 - [ ] Captura o resultado del rollback con chaos apagado y latencia reducida.
 - [ ] Cualquier error, timeout o diferencia frente al comportamiento local, **sin ocultarlo**.
 
-Guardar las capturas en `screenshots_gcp/` siguiendo la convención existente, por ejemplo `cloud-run-gameday-chaos-2000ms.png`.
+Las capturas de este game day se conservan en el historial de git; las evidencias vigentes del laboratorio integrador viven en `evidencias/`.
 
 ## 4. Criterio de éxito y condición de aborto
 
@@ -213,7 +213,7 @@ Proyecto `opentelemetry-nrb`, región `us-central1`. Código desplegado desde `f
 ### Secuencia de revisiones
 
 | Revisión | Estado | `CHAOS_ENABLED` | `CHAOS_LATENCY_MS` |
-|---|---|---|---|
+|---|---|---|
 | `inventory-api-00006-qv4` | Deploy del código del experimento | (ausente) | (ausente) |
 | `inventory-api-00007-hhq` | Estable explícito | `false` | `0` |
 | `inventory-api-00008-qv6` | **Game Day activo** | `true` | `2000` |
@@ -222,7 +222,7 @@ Proyecto `opentelemetry-nrb`, región `us-central1`. Código desplegado desde `f
 ### Latencia end-to-end (`POST /orders` contra `orders-api`)
 
 | Fase | Intento 1 | Intento 2 | Intento 3 | Status |
-|---|---|---|---|---|
+|---|---|---|---|
 | Estable (chaos OFF) | 0.252 s | 0.269 s | 0.239 s | 201 |
 | **Chaos ON (2000 ms)** | **2.318 s** | **2.290 s** | **2.285 s** | **201** |
 | Post-rollback | 0.240 s | 0.249 s | 0.272 s | 201 |
@@ -260,9 +260,9 @@ gcloud logging read \
 Capturas de la consola de Cloud Logging:
 
 | Vista | Qué muestra | Captura |
-|---|---|---|
-| Resultados de la consulta | **4 eventos** `chaos.latency.injected`, todos con `latency_ms:2000` y `product_id:"p1"`, agrupados en la ventana 21:42:45–21:42:52 EDT | `screenshots_gcp/cloud-logging-gameday-4-eventos-chaos.png` |
-| Entrada expandida | `jsonPayload` completo con `event`, `latency_ms`, `level: warning`, `product_id`, `span_id` y `trace_id` | `screenshots_gcp/cloud-logging-gameday-json-trace-id.png` |
+|---|---|
+| Resultados de la consulta | **4 eventos** `chaos.latency.injected`, todos con `latency_ms:2000` y `product_id:"p1"`, agrupados en la ventana 21:42:45–21:42:52 EDT |
+| Entrada expandida | `jsonPayload` completo con `event`, `latency_ms`, `level: warning`, `product_id`, `span_id` y `trace_id` |
 
 **Correlación log ↔ traza verificada en la consola.** El `span_id` del primer evento de log, `6f1f5998f3e2a77b`, es exactamente el del span `reserve_stock` abierto en Cloud Trace (visible en la URL como `spanId=6f1f5998f3e2a77b`). Es decir: el log que registra la inyección y el span que la ejecuta son la misma unidad de trabajo, comprobado en dos productos distintos de GCP.
 
@@ -297,22 +297,22 @@ curl -s -H "Authorization: Bearer $TOKEN" \
 Capturas de la consola de Cloud Trace:
 
 | Vista | Qué muestra | Captura |
-|---|---|---|
-| Explorador, lista de intervalos | Los spans del experimento a las 21:42:45 EDT con duraciones de **2.085 s / 2.077 s / 2.06 s / 2.048 s**, contra el resto de tráfico en milisegundos | `screenshots_gcp/cloud-trace-gameday-lista-spans-2s.png` |
-| Cronograma de la traza | Cascada completa `orders-api → inventory-api` con los 17 intervalos y el `UPDATE inventory` de 12.526 ms al fondo | `screenshots_gcp/cloud-trace-gameday-cascada-orders-inventory.png` |
-| Span `reserve_stock` + atributos | **La evidencia central**: la cascada y el panel de atributos con `chaos.enabled=true` y `chaos.latency_ms=2000` en la misma pantalla | `screenshots_gcp/cloud-trace-gameday-reserve-stock-atributos-chaos.png` |
+|---|---|
+| Explorador, lista de intervalos | Los spans del experimento a las 21:42:45 EDT con duraciones de **2.085 s / 2.077 s / 2.06 s / 2.048 s**, contra el resto de tráfico en milisegundos |
+| Cronograma de la traza | Cascada completa `orders-api → inventory-api` con los 17 intervalos y el `UPDATE inventory` de 12.526 ms al fondo |
+| Span `reserve_stock` + atributos | **La evidencia central**: la cascada y el panel de atributos con `chaos.enabled=true` y `chaos.latency_ms=2000` en la misma pantalla |
 
 ### Evidencia en Grafana (Managed Prometheus)
 
 Ventana `2026-08-30T01:35:00Z` a `01:55:00Z` en el dashboard `observabilidad-gcp`:
 
-| Panel | Qué muestra | Captura |
-|---|---|---|
-| SLI-2 Latencia | Onda cuadrada de ~24 ms a **~2.4 s** entre 01:42 y 01:47, en `inventory-api` y `orders-api` | `screenshots_gcp/grafana-gameday-sli2-latencia-pico-2400ms.png` |
-| Latencia DB p99 | Sube solo de 24 ms a **48 ms**: la base nunca fue el cuello de botella | `screenshots_gcp/grafana-gameday-db-p99-sin-degradacion.png` |
-| SLI-3 Error Rate | Plano en **0%** durante todo el experimento (la línea de 0.5% es el umbral del SLO) | `screenshots_gcp/grafana-gameday-sli3-error-rate-cero.png` |
-| SLI-4 Throughput | El tráfico continúa; no hubo caída de servicio | `screenshots_gcp/grafana-gameday-sli4-throughput.png` |
-| Propagación W3C | Llamadas `orders → inventory` con `result="ok"` durante la ventana | `screenshots_gcp/grafana-gameday-propagacion-w3c.png` |
+| Panel | Qué muestra |
+|---|---|
+| SLI-2 Latencia | Onda cuadrada de ~24 ms a **~2.4 s** entre 01:42 y 01:47, en `inventory-api` y `orders-api` |
+| Latencia DB p99 | Sube solo de 24 ms a **48 ms**: la base nunca fue el cuello de botella |
+| SLI-3 Error Rate | Plano en **0%** durante todo el experimento (la línea de 0.5% es el umbral del SLO) |
+| SLI-4 Throughput | El tráfico continúa; no hubo caída de servicio |
+| Propagación W3C | Llamadas `orders → inventory` con `result="ok"` durante la ventana |
 
 Serie p95 de `inventory-api` consultada directamente a Managed Prometheus:
 

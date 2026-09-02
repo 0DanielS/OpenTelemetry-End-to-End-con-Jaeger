@@ -46,7 +46,7 @@ jobs:
             --service-account "$RUNTIME_SA" \
             --add-cloudsql-instances "$SQL_INSTANCE" \
             --set-secrets "DATABASE_URL=inventory-database-url:latest" \
-            --set-env-vars "OTEL_SERVICE_NAME=inventory-api,OTEL_EXPORTER_OTLP_PROTOCOL=grpc,OTEL_METRIC_EXPORT_INTERVAL=5000,OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_ENDPOINT,DB_POOL_SIZE=5,DB_MAX_OVERFLOW=5" \
+            --set-env-vars "OTEL_SERVICE_NAME=inventory-api,OTEL_EXPORTER_OTLP_PROTOCOL=grpc,OTEL_METRIC_EXPORT_INTERVAL=15000,OTEL_EXPORTER_OTLP_ENDPOINT=$OTEL_ENDPOINT,DB_POOL_SIZE=5,DB_MAX_OVERFLOW=5" \
             --port 8081 \
             --allow-unauthenticated \
             --quiet

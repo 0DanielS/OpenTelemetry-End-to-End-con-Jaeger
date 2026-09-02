@@ -71,3 +71,5 @@ gcloud secrets add-iam-policy-binding orders-database-url --project="$PROJECT_ID
   --member="serviceAccount:${RUN_SA}" --role="roles/secretmanager.secretAccessor"
 gcloud secrets add-iam-policy-binding inventory-database-url --project="$PROJECT_ID" \
   --member="serviceAccount:${RUN_SA}" --role="roles/secretmanager.secretAccessor"
+
+./scripts/setup-dataservice-db.sh
